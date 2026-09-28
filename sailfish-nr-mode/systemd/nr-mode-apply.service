@@ -1,0 +1,7 @@
+[Unit]
+Description=Apply the NR Mode request (5G NR only on/off)
+After=ofono.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nr-mode/nr-mode-helper apply

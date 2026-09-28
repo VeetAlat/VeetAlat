@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for NR Mode requests from the NR Mode app
+
+[Path]
+PathChanged=/run/nr-mode/request
+Unit=nr-mode-apply.service
+
+[Install]
+WantedBy=multi-user.target

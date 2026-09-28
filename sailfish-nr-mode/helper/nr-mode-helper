@@ -1,0 +1,226 @@
+#!/bin/sh
+#
+# nr-mode-helper - root side of the NR Mode app.
+#
+# ofono-binder-plugin has no "NR only" technology preference: "nr" always
+# maps to NR_LTE_GSM_WCDMA (33). It does, however, read the raw modem mode
+# used for the "lte" preference from the lteNetworkMode config key. Setting
+# that to 23 (RADIO_PREF_NET_NR_ONLY) and selecting "lte" makes the plugin
+# send an NR-only access family bitmap to the modem, i.e. 5G standalone.
+#
+# Usage: nr-mode-helper apply     read /run/nr-mode/request and act on it
+#        nr-mode-helper on|on-keep|off
+#        nr-mode-helper status
+#
+# "on" reverts automatically when the modem has not registered to a network
+# within NR_MODE_REVERT_TIMEOUT seconds; "on-keep" does not.
+
+set -u
+
+# NR_MODE_ROOT only exists so the test suite can run in a scratch directory.
+ROOT=${NR_MODE_ROOT:-}
+RUN_DIR=$ROOT/run/nr-mode
+REQUEST_FILE=$RUN_DIR/request
+STATE_FILE=$RUN_DIR/state
+LIB_DIR=$ROOT/var/lib/nr-mode
+SAVED_PREFS=$LIB_DIR/saved-preferences
+OFONO_CONF=$ROOT/etc/ofono/binder.conf
+DROPIN_DIR=$ROOT/etc/ofono/binder.d
+DROPIN=$DROPIN_DIR/90-nr-mode.conf
+
+RADIO_PREF_NET_NR_ONLY=23
+REVERT_TIMEOUT=${NR_MODE_REVERT_TIMEOUT:-60}
+
+log() {
+    echo "nr-mode: $*" >&2
+}
+
+set_state() {
+    mkdir -p "$RUN_DIR"
+    printf '%s\n' "$*" > "$STATE_FILE.tmp" && mv -f "$STATE_FILE.tmp" "$STATE_FILE"
+    log "$*"
+}
+
+ofono_call() {
+    # $1 = object path, $2 = interface.method, rest = arguments
+    path=$1
+    method=$2
+    shift 2
+    dbus-send --system --print-reply=literal --reply-timeout=5000 \
+        --dest=org.ofono "$path" "$method" "$@" 2>/dev/null
+}
+
+list_modems() {
+    ofono_call / org.ofono.Manager.GetModems |
+        grep -o '/[A-Za-z0-9_/]*' | grep -v '^/$' | sort -u
+}
+
+# Prints the value of a string property, e.g. get_prop /ril_0 RadioSettings
+# TechnologyPreference. dbus-send --print-reply=literal puts a dict entry's
+# key, the word "variant" and a simple value on one line.
+get_prop() {
+    ofono_call "$1" "org.ofono.$2.GetProperties" |
+        awk -v key="$3" '$1 == key && $2 == "variant" { print $3; exit }'
+}
+
+# True if RadioSettings.AvailableTechnologies contains "nr". The array
+# elements follow the key on the next line(s), up to the closing "]".
+has_nr() {
+    ofono_call "$1" org.ofono.RadioSettings.GetProperties |
+        awk '$1 == "AvailableTechnologies" { f = 1; next }
+             f { for (i = 1; i <= NF; i++) {
+                     if ($i == "nr") ok = 1
+                     if ($i == "]") f = 0
+                 } }
+             END { exit !ok }'
+}
+
+set_pref() {
+    ofono_call "$1" org.ofono.RadioSettings.SetProperty \
+        string:TechnologyPreference "variant:string:$2" > /dev/null
+}
+
+nr_modems() {
+    for m in $(list_modems); do
+        has_nr "$m" && echo "$m"
+    done
+}
+
+wait_for_radio_settings() {
+    i=0
+    while [ $i -lt 30 ]; do
+        modems=$(nr_modems)
+        [ -n "$modems" ] && { echo "$modems"; return 0; }
+        sleep 1
+        i=$((i + 1))
+    done
+    return 1
+}
+
+# Every [slotN] group that already exists must get the key too, because a
+# slot specific lteNetworkMode would override the one in [Settings]. Groups
+# that don't exist yet are left alone so we don't invent phantom slots.
+existing_slot_groups() {
+    cat "$OFONO_CONF" "$DROPIN_DIR"/*.conf 2>/dev/null |
+        grep -o '^\[slot[0-9]*\]' | sort -u
+}
+
+write_dropin() {
+    mkdir -p "$DROPIN_DIR"
+    {
+        echo "# Written by nr-mode-helper. Delete this file and restart"
+        echo "# ofono to go back to normal network selection."
+        echo "[Settings]"
+        echo "lteNetworkMode=$RADIO_PREF_NET_NR_ONLY"
+        for group in $(existing_slot_groups); do
+            echo
+            echo "$group"
+            echo "lteNetworkMode=$RADIO_PREF_NET_NR_ONLY"
+        done
+    } > "$DROPIN.tmp" && mv -f "$DROPIN.tmp" "$DROPIN"
+}
+
+restart_ofono() {
+    systemctl restart ofono.service
+}
+
+registered() {
+    for m in $1; do
+        case $(get_prop "$m" NetworkRegistration Status) in
+            registered|roaming) return 0 ;;
+        esac
+    done
+    return 1
+}
+
+do_off() {
+    set_state "busy: restoring normal mode"
+    rm -f "$DROPIN"
+    restart_ofono
+    modems=$(wait_for_radio_settings) || {
+        set_state "error: ofono did not come back after restart"
+        return 1
+    }
+    for m in $modems; do
+        pref=$(awk -v m="$m" '$1 == m { print $2 }' "$SAVED_PREFS" 2>/dev/null)
+        # Restoring "lte" would leave the modem on LTE, which is almost
+        # never what someone leaving NR-only wants.
+        case $pref in ""|lte) pref=nr ;; esac
+        set_pref "$m" "$pref"
+    done
+    rm -f "$SAVED_PREFS"
+    set_state "off"
+}
+
+do_on() {
+    keep=$1
+    modems=$(nr_modems)
+    if [ -z "$modems" ]; then
+        set_state "error: no modem advertises 5G NR support"
+        return 1
+    fi
+
+    set_state "busy: switching to NR only"
+    if [ ! -f "$DROPIN" ]; then
+        mkdir -p "$LIB_DIR"
+        : > "$SAVED_PREFS"
+        for m in $modems; do
+            echo "$m $(get_prop "$m" RadioSettings TechnologyPreference)" >> "$SAVED_PREFS"
+        done
+    fi
+
+    write_dropin
+    restart_ofono
+    modems=$(wait_for_radio_settings) || {
+        set_state "error: ofono did not come back after restart"
+        return 1
+    }
+    for m in $modems; do
+        set_pref "$m" lte
+    done
+
+    if [ "$keep" = yes ]; then
+        set_state "on"
+        return 0
+    fi
+
+    set_state "busy: waiting for a 5G SA cell (${REVERT_TIMEOUT}s)"
+    i=0
+    while [ $i -lt "$REVERT_TIMEOUT" ]; do
+        if registered "$modems"; then
+            set_state "on"
+            return 0
+        fi
+        sleep 2
+        i=$((i + 2))
+    done
+
+    log "no registration within ${REVERT_TIMEOUT}s, reverting"
+    do_off
+    set_state "reverted: no 5G SA network found"
+}
+
+status() {
+    if [ -f "$DROPIN" ]; then echo on; else echo off; fi
+}
+
+case ${1:-} in
+    apply)
+        # Only the first word of the request counts, anything else is noise.
+        req=$(head -c 32 "$REQUEST_FILE" 2>/dev/null | tr -cd 'a-z-' )
+        case $req in
+            on) do_on no ;;
+            on-keep) do_on yes ;;
+            off) do_off ;;
+            *) set_state "error: ignoring unknown request '$req'"; exit 1 ;;
+        esac
+        ;;
+    on) do_on no ;;
+    on-keep) do_on yes ;;
+    off) do_off ;;
+    status) status ;;
+    *)
+        echo "Usage: $0 apply|on|on-keep|off|status" >&2
+        exit 2
+        ;;
+esac

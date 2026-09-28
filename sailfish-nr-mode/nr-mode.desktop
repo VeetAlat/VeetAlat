@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=NR Mode
+Comment=Lock the modem to 5G NR standalone
+Icon=nr-mode
+# Launched directly (no booster) so the setgid privileged bit survives.
+Exec=/usr/bin/nr-mode
+X-Nemo-Application-Type=no-invoker
+
+[X-Sailjail]
+# Needs to write to /run/nr-mode, which the sandbox would block.
+Sandboxing=Disabled
