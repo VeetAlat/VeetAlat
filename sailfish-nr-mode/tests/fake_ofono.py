@@ -54,6 +54,16 @@ class SimManager:
                 "ServiceProviderName": "Fake Telecom", "PinRequired": "none"}
 
 
+def techs():
+    """AvailableTechnologies, overridable via FAKE_OFONO_TECHS_FILE to
+    mimic phones whose ofono config leaves NR out."""
+    try:
+        with open(os.environ["FAKE_OFONO_TECHS_FILE"]) as f:
+            return f.read().split()
+    except (KeyError, OSError):
+        return ["gsm", "umts", "lte", "nr"]
+
+
 class RadioSettings:
     pref = "nr"
 
@@ -61,12 +71,14 @@ class RadioSettings:
     def GetProperties(self):
         return {
             "TechnologyPreference": self.pref,
-            "AvailableTechnologies": dbus.Array(
-                ["gsm", "umts", "lte", "nr"], signature="s"),
+            "AvailableTechnologies": dbus.Array(techs(), signature="s"),
         }
 
     @dbus.service.method("org.ofono.RadioSettings", in_signature="sv")
     def SetProperty(self, name, value):
+        if str(value) not in ("any",) + tuple(techs()):
+            raise dbus.exceptions.DBusException(
+                "org.ofono.Error.InvalidArguments")
         self.pref = str(value)
         with open(os.environ["FAKE_OFONO_LOG"], "a") as f:
             f.write(f"{name}={value}\n")

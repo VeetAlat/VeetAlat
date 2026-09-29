@@ -114,6 +114,19 @@ private slots:
         QTRY_VERIFY(control.diagnostics().startsWith("NR Mode diagnostics"));
     }
 
+    void detectsRilDropin()
+    {
+        QTemporaryDir root;
+        QDir(root.path()).mkpath("run/nr-mode");
+        QDir(root.path()).mkpath("etc/ofono");
+        NrControl control(root.path());
+        QVERIFY(!control.enabled());
+
+        QDir(root.path()).mkpath("etc/ofono/ril_subscription.d");
+        write(root.path() + "/etc/ofono/ril_subscription.d/90-nr-mode.conf", "[Settings]\n");
+        QTRY_VERIFY(control.enabled());
+    }
+
     void rejectsUnknownRequests()
     {
         QTemporaryDir root;

@@ -1,6 +1,6 @@
 Name:       nr-mode
 Summary:    Lock the modem to 5G NR standalone (NR only)
-Version:    0.2.0
+Version:    0.3.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -9,7 +9,7 @@ Source0:    %{name}-%{version}.tar.bz2
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   libqofono-qt5-declarative
 Requires:   nemo-qml-plugin-configuration-qt5
-Requires:   ofono-binder-plugin
+Requires:   ofono
 Requires:   dbus
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)

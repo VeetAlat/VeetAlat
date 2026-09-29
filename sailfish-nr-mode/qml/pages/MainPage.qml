@@ -69,7 +69,7 @@ Page {
                 automaticCheck: false
                 checked: nrControl.enabled
                 busy: nrControl.busy
-                enabled: !nrControl.busy && (network.nrCapable || nrControl.enabled)
+                enabled: !nrControl.busy
                 onClicked: {
                     if (checked) {
                         nrControl.request("off")
@@ -101,10 +101,13 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
-                visible: !network.nrCapable && !nrControl.enabled
+                visible: !network.nrCapable && network.availableTechnologies.length > 0
                 wrapMode: Text.Wrap
-                color: Theme.errorColor
-                text: "This modem does not report 5G NR support."
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                text: "ofono doesn't list 5G for this modem. That list comes from the "
+                      + "phone's ofono config, not the modem itself, so NR only can "
+                      + "still work. Keep \"Revert without 5G SA\" on the first time."
             }
 
             SectionHeader { text: "Network" }

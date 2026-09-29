@@ -44,8 +44,8 @@ Things worth knowing:
   `privileged` group (ofono's `sailfish_access` plugin). Normal apps are
   read-only.
 - Older devices that use `ofono-ril-plugin` (`ril_subscription.conf`)
-  have no NR support at all, so this only works on binder-based 5G phones such
-  as the Xperia 10 III/IV/V.
+  never list NR, but they still pass `lteNetworkMode` to the vendor RIL, so
+  the same trick may work there if the modem supports it.
 
 ## The trick
 
@@ -54,6 +54,18 @@ Things worth knowing:
 2. Restart ofono so it rereads the config.
 3. Set `TechnologyPreference` to `lte` on each modem that lists `nr` in
    `AvailableTechnologies`. ofono now sends mode 23 (NR only) to the modem.
+
+Phones that use the older `ofono-ril-plugin` work the same way: it has the
+same `lteNetworkMode` key, read from `/etc/ofono/ril_subscription.conf` and
+`ril_subscription.d/` with `[ril_N]` sections, and passes the value straight
+to the vendor RIL. The helper detects which plugin is in use.
+
+**"ofono doesn't list 5G" doesn't mean the modem can't do it.**
+`AvailableTechnologies` is just the `technologies` value from the ofono
+config. The binder plugin also hides NR when the radio HAL is older than 1.4,
+and the RIL plugin never lists it. The helper therefore tries anyway and
+logs why ofono didn't list NR. The modem firmware has the final say, and
+auto-revert covers the case where it says no.
 
 Turning it off deletes the drop-in, restarts ofono and restores the previous
 preference (`nr` if it was anything odd). Side effect while it's on: the
@@ -136,11 +148,11 @@ Needs Developer mode (Settings → Developer tools). Copy the RPM to the phone,
 then in Terminal:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/nr-mode-0.2.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/nr-mode-0.3.0-1.aarch64.rpm
 ```
 
 If `pkcon` refuses the unsigned package, use
-`devel-su rpm -i ~/Downloads/nr-mode-0.2.0-1.aarch64.rpm` instead.
+`devel-su rpm -i ~/Downloads/nr-mode-0.3.0-1.aarch64.rpm` instead.
 
 ## Tests
 

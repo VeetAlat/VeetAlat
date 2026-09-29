@@ -61,6 +61,7 @@ BUS_PID=$!
 export DBUS_SYSTEM_BUS_ADDRESS="unix:path=$WORK/bus"
 export FAKE_OFONO_LOG="$WORK/ofono.log"
 export FAKE_OFONO_STATUS_FILE="$WORK/status"
+export FAKE_OFONO_TECHS_FILE="$WORK/techs"
 export NR_MODE_ROOT="$WORK/root"
 export PATH="$WORK/bin:$PATH"
 
@@ -160,6 +161,38 @@ watch_ok=no
 timeout 3 "$HELPER" watch 1 2>&1 |
     grep -q '/ril_0 registered .*nr .*62% Fake Telecom' && watch_ok=yes
 check "watch prints live state" "[ $watch_ok = yes ]"
+
+echo "--- ofono config without nr"
+echo "gsm umts lte" > "$FAKE_OFONO_TECHS_FILE"
+"$HELPER" off > /dev/null 2>&1
+dbus-send --system --print-reply --dest=org.ofono /ril_0 org.ofono.RadioSettings.SetProperty \
+    string:TechnologyPreference variant:string:lte > /dev/null
+printf '[Settings]\ntechnologies=gsm,umts,lte\n' > "$NR_MODE_ROOT/etc/ofono/binder.d/10-vendor.conf"
+"$HELPER" on-keep 2> /dev/null
+check "switches on although ofono hides nr" "grep -qx on '$STATE' && [ -f '$DROPIN' ]"
+check "explains why nr is missing" "grep -q 'sets technologies=gsm,umts,lte' '$LOG'"
+check "still asks ofono for lte" "tail -n1 '$FAKE_OFONO_LOG' | grep -qx 'TechnologyPreference=lte'"
+"$HELPER" off 2> /dev/null
+check "off restores lte, not an unavailable nr" \
+    "tail -n1 '$FAKE_OFONO_LOG' | grep -qx 'TechnologyPreference=lte' && grep -qx off '$STATE'"
+rm -f "$NR_MODE_ROOT/etc/ofono/binder.d/10-vendor.conf" "$FAKE_OFONO_TECHS_FILE"
+"$HELPER" off > /dev/null 2>&1
+
+echo "--- ril plugin"
+mv "$NR_MODE_ROOT/etc/ofono/binder.conf" "$WORK/binder.conf.saved"
+printf '[Settings]\n\n[ril_0]\nsocket=/dev/socket/rild\n\n[ril_1]\nsocket=/dev/socket/rild2\nlteNetworkMode=9\n' \
+    > "$NR_MODE_ROOT/etc/ofono/ril_subscription.conf"
+RIL_DROPIN=$NR_MODE_ROOT/etc/ofono/ril_subscription.d/90-nr-mode.conf
+"$HELPER" on-keep 2> /dev/null
+check "ril: drop-in in ril_subscription.d" "[ -f '$RIL_DROPIN' ] && [ ! -f '$DROPIN' ]"
+check "ril: [Settings] gets 23" "grep -A1 '^\[Settings\]' '$RIL_DROPIN' | grep -qx 'lteNetworkMode=23'"
+check "ril: existing [ril_1] overridden" "grep -A1 '^\[ril_1\]' '$RIL_DROPIN' | grep -qx 'lteNetworkMode=23'"
+check "ril: status reports on" "[ \"\$('$HELPER' status)\" = on ]"
+check "ril: log names the plugin" "grep -q 'ofono plugin: ril' '$LOG'"
+"$HELPER" off 2> /dev/null
+check "ril: off removes drop-in" "[ ! -f '$RIL_DROPIN' ] && grep -qx off '$STATE'"
+rm -f "$NR_MODE_ROOT/etc/ofono/ril_subscription.conf"
+mv "$WORK/binder.conf.saved" "$NR_MODE_ROOT/etc/ofono/binder.conf"
 
 echo "--- junk request"
 printf 'rm -rf /\n' > "$NR_MODE_ROOT/run/nr-mode/request"

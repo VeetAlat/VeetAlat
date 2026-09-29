@@ -10,8 +10,12 @@ const QString RequestFile = QStringLiteral("/run/nr-mode/request");
 const QString StateFile = QStringLiteral("/run/nr-mode/state");
 const QString LogFile = QStringLiteral("/run/nr-mode/log");
 const QString DiagFile = QStringLiteral("/run/nr-mode/diag.txt");
-const QString DropinDir = QStringLiteral("/etc/ofono/binder.d");
-const QString DropinFile = QStringLiteral("/etc/ofono/binder.d/90-nr-mode.conf");
+// The helper writes its drop-in for whichever ofono plugin the phone uses.
+const QStringList DropinDirs {
+    QStringLiteral("/etc/ofono/binder.d"),
+    QStringLiteral("/etc/ofono/ril_subscription.d"),
+};
+const QString DropinName = QStringLiteral("/90-nr-mode.conf");
 
 // The last maxLines lines of a text file, or an empty string.
 QString readTail(const QString &path, int maxLines)
@@ -76,7 +80,10 @@ void NrControl::refresh()
 {
     watch();
 
-    const bool enabled = QFileInfo::exists(m_root + DropinFile);
+    bool enabled = false;
+    for (const QString &dir : DropinDirs) {
+        enabled = enabled || QFileInfo::exists(m_root + dir + DropinName);
+    }
     QString state;
     QFile file(m_root + StateFile);
     if (file.open(QIODevice::ReadOnly)) {
@@ -110,13 +117,12 @@ void NrControl::refresh()
 
 void NrControl::watch()
 {
-    // binder.d may not exist until the helper creates it, so fall back
-    // to watching its parent.
-    const QStringList wanted {
-        m_root + RunDir,
-        QFileInfo::exists(m_root + DropinDir) ? m_root + DropinDir
-                                              : m_root + QStringLiteral("/etc/ofono"),
-    };
+    // The drop-in directories may not exist until the helper creates
+    // them, so /etc/ofono is watched too.
+    QStringList wanted { m_root + RunDir, m_root + QStringLiteral("/etc/ofono") };
+    for (const QString &dir : DropinDirs) {
+        wanted << m_root + dir;
+    }
     for (const QString &dir : wanted) {
         if (!m_watcher.directories().contains(dir) && QFileInfo::exists(dir)) {
             m_watcher.addPath(dir);
