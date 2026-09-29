@@ -87,14 +87,29 @@ cat /run/nr-mode/state
 
 ## Building
 
-With the Sailfish SDK (or `sfdk`):
+With Docker, no SDK install needed. This uses the community
+`coderus/sailfishos-platform-sdk` image, which is about 4.5 GB:
 
 ```sh
 cd sailfish-nr-mode
-sfdk config target=SailfishOS-5.0.0.62-aarch64   # match your phone
-sfdk build
-sfdk deploy --sdk          # or copy the RPM and: devel-su pkcon install-local nr-mode-*.rpm
+./build-rpm.sh aarch64      # or armv7hl for older 32-bit phones
 ```
+
+It builds against Sailfish OS 4.6, so the package also runs on 5.x. The RPM
+lands in `RPMS/`. With the official SDK installed instead, use
+`sfdk config target=SailfishOS-4.6.0.13-aarch64 && sfdk build`.
+
+## Installing
+
+Needs Developer mode (Settings → Developer tools). Copy the RPM to the phone,
+then in Terminal:
+
+```sh
+devel-su pkcon install-local ~/Downloads/nr-mode-0.1.0-1.aarch64.rpm
+```
+
+If `pkcon` refuses the unsigned package, use
+`devel-su rpm -i ~/Downloads/nr-mode-0.1.0-1.aarch64.rpm` instead.
 
 ## Tests
 

@@ -67,9 +67,10 @@ Page {
             TextSwitch {
                 text: "Revert without 5G SA"
                 description: "Go back to normal mode if no 5G standalone cell is found within 60 seconds."
+                automaticCheck: false
                 checked: autoRevert.value
                 enabled: !nrControl.busy
-                onCheckedChanged: autoRevert.value = checked
+                onClicked: autoRevert.value = !autoRevert.value
             }
 
             Label {
