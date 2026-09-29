@@ -51,7 +51,11 @@ class SimManager:
         return {"Present": True, "SubscriberIdentity": "244911234567890",
                 "CardIdentifier": "8935891000012345678",
                 "MobileCountryCode": "244", "MobileNetworkCode": "91",
-                "ServiceProviderName": "Fake Telecom", "PinRequired": "none"}
+                "ServiceProviderName": "Fake Telecom", "PinRequired": "none",
+                "ServiceNumbers": dbus.Dictionary(
+                    {"Voicemail": "+358401234", "Customer care": "+35840999"},
+                    signature="ss"),
+                "LockedPins": dbus.Array([], signature="s")}
 
 
 def techs():

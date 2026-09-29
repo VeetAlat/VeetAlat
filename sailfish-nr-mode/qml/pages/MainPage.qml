@@ -11,11 +11,15 @@ Page {
 
     allowedOrientations: Orientation.All
 
+    // Seconds without registration before going back to normal mode,
+    // 0 for never. A first SA scan after the radio restarts can take a
+    // few minutes, hence the 3 minute default.
     ConfigurationValue {
-        id: autoRevert
-        key: "/apps/nr-mode/autoRevert"
-        defaultValue: true
+        id: revertAfter
+        key: "/apps/nr-mode/revertAfter"
+        defaultValue: 180
     }
+    readonly property var revertChoices: [60, 180, 300, 0]
 
     RemorsePopup { id: remorse }
 
@@ -74,20 +78,25 @@ Page {
                     if (checked) {
                         nrControl.request("off")
                     } else {
-                        var mode = autoRevert.value ? "on" : "on-keep"
+                        var mode = revertAfter.value > 0 ? "on-" + revertAfter.value : "on-keep"
                         remorse.execute("Restarting cellular for NR only",
                                         function() { nrControl.request(mode) })
                     }
                 }
             }
 
-            TextSwitch {
-                text: "Revert without 5G SA"
-                description: "Go back to normal mode if no 5G standalone cell is found within 60 seconds."
-                automaticCheck: false
-                checked: autoRevert.value
+            ComboBox {
+                label: "Revert without 5G SA"
+                description: "Go back to normal mode if the phone hasn't registered to a network by then."
                 enabled: !nrControl.busy
-                onClicked: autoRevert.value = !autoRevert.value
+                currentIndex: Math.max(0, page.revertChoices.indexOf(revertAfter.value))
+                menu: ContextMenu {
+                    MenuItem { text: "After 1 minute" }
+                    MenuItem { text: "After 3 minutes" }
+                    MenuItem { text: "After 5 minutes" }
+                    MenuItem { text: "Never" }
+                }
+                onCurrentIndexChanged: revertAfter.value = page.revertChoices[currentIndex]
             }
 
             Label {
@@ -107,7 +116,7 @@ Page {
                 color: Theme.secondaryHighlightColor
                 text: "ofono doesn't list 5G for this modem. That list comes from the "
                       + "phone's ofono config, not the modem itself, so NR only can "
-                      + "still work. Keep \"Revert without 5G SA\" on the first time."
+                      + "still work. Keep an automatic revert on the first time."
             }
 
             SectionHeader { text: "Network" }

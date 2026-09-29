@@ -47,6 +47,19 @@ private slots:
         QCOMPARE(f.readAll(), QByteArray("on-keep\n"));
     }
 
+    void acceptsRevertTimeouts()
+    {
+        QTemporaryDir root;
+        QDir(root.path()).mkpath("run/nr-mode");
+        NrControl control(root.path());
+        for (const char *mode : { "on-60", "on-180", "on-300" }) {
+            QVERIFY(control.request(mode));
+            QFile f(root.path() + "/run/nr-mode/request");
+            QVERIFY(f.open(QIODevice::ReadOnly));
+            QCOMPARE(f.readAll(), QByteArray(mode) + '\n');
+        }
+    }
+
     void diagRequestDoesNotGoBusy()
     {
         QTemporaryDir root;
@@ -133,6 +146,7 @@ private slots:
         QDir(root.path()).mkpath("run/nr-mode");
         NrControl control(root.path());
         QVERIFY(!control.request("rm -rf /"));
+        QVERIFY(!control.request("on-9999"));
         QVERIFY(!QFile::exists(root.path() + "/run/nr-mode/request"));
     }
 

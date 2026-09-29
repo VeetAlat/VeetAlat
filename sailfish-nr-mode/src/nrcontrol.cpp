@@ -47,9 +47,14 @@ NrControl::NrControl(const QString &root, QObject *parent)
 
 bool NrControl::request(const QString &mode)
 {
+    // Must match what the helper's "apply" accepts.
+    static const QStringList Allowed {
+        QStringLiteral("on"), QStringLiteral("on-60"), QStringLiteral("on-180"),
+        QStringLiteral("on-300"), QStringLiteral("on-keep"), QStringLiteral("off"),
+        QStringLiteral("diag"),
+    };
     const bool diag = mode == QLatin1String("diag");
-    if (mode != QLatin1String("on") && mode != QLatin1String("on-keep")
-            && mode != QLatin1String("off") && !diag) {
+    if (!Allowed.contains(mode)) {
         qWarning() << "Unknown NR mode request" << mode;
         return false;
     }

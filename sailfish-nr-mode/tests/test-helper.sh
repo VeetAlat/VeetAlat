@@ -126,6 +126,19 @@ check "drop-in gone after revert" "[ ! -f '$DROPIN' ]"
 check "preference back to nr after revert" \
     "tail -n1 '$FAKE_OFONO_LOG' | grep -qx 'TechnologyPreference=nr'"
 
+echo "--- revert timeout"
+printf 'on-180\n' > "$NR_MODE_ROOT/run/nr-mode/request"
+echo registered > "$FAKE_OFONO_STATUS_FILE"
+"$HELPER" apply 2> /dev/null
+check "request on-180 uses a 180s window" "grep -q 'auto-revert: 180s' '$NR_MODE_ROOT/run/nr-mode/log'"
+"$HELPER" off > /dev/null 2>&1
+if "$HELPER" on 12x > /dev/null 2>&1; then rc=0; else rc=$?; fi
+check "on rejects a non-numeric timeout" "[ $rc -eq 2 ] && [ ! -f '$DROPIN' ]"
+printf 'on-9999\n' > "$NR_MODE_ROOT/run/nr-mode/request"
+if "$HELPER" apply 2> /dev/null; then rc=0; else rc=$?; fi
+check "apply rejects an unlisted timeout" "[ $rc -ne 0 ] && [ ! -f '$DROPIN' ]"
+echo searching > "$FAKE_OFONO_STATUS_FILE"
+
 echo "--- logging"
 LOG=$NR_MODE_ROOT/run/nr-mode/log
 check "log file written" "[ -s '$LOG' ]"
@@ -133,6 +146,7 @@ check "log lines are timestamped" "head -n1 '$LOG' | grep -Eq '^[0-9]{2}:[0-9]{2
 check "log records the preference change" "grep -q 'TechnologyPreference -> lte (ok' '$LOG'"
 check "log records registration state" "grep -q 'registration=registered tech=nr strength=62%' '$LOG'"
 check "log records the serving cell" "grep -q 'serving cell: nr .*ssRsrp=-95dBm' '$LOG'"
+check "log counts visible cells" "grep -q 'cells visible: 2 (nr: 1, lte: 1, 3G: 0, 2G: 0)' '$LOG'"
 check "log records the revert" "grep -q 'no registration within 2s' '$LOG'"
 
 echo "--- diag"
@@ -143,6 +157,8 @@ check "diag shows SIM provider" "has 'ServiceProviderName: Fake Telecom'"
 check "diag masks the IMSI" "has 'SubscriberIdentity: 24491…90' && ! has '244911234567890'"
 check "diag masks the ICCID" "! has '8935891000012345678'"
 check "diag shows booleans without type word" "has 'Present: true'"
+check "diag formats nested dicts" \
+    "has 'ServiceNumbers: Customer care = +35840999; Voicemail = +358401234' || has 'ServiceNumbers: Voicemail = +358401234; Customer care = +35840999'"
 check "diag shows the APN" "has 'AccessPointName: internet'"
 check "diag hides APN password" "has 'Password: \*\*\*' && ! has secret"
 check "diag shows the context header" "has '\[/ril_0/context1\]'"

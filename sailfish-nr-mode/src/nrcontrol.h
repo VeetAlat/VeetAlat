@@ -30,8 +30,9 @@ public:
     QString log() const { return m_log; }
     QString diagnostics() const { return m_diagnostics; }
 
-    // mode is "on", "on-keep" (no automatic revert), "off", or "diag" to
-    // have the helper write a fresh diagnostics report.
+    // mode is "on" (revert after 60 s without registration), "on-60",
+    // "on-180", "on-300", "on-keep" (no automatic revert), "off", or
+    // "diag" to have the helper write a fresh diagnostics report.
     Q_INVOKABLE bool request(const QString &mode);
 
 signals:

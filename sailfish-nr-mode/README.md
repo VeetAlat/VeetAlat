@@ -7,7 +7,7 @@ ignores LTE, 3G and 2G.
 > ⚠️ In NR only mode the phone has **no service at all** outside 5G SA
 > coverage. Calls and SMS only work if your operator supports VoNR, and
 > emergency calls may not work. The app can revert automatically if no SA
-> cell turns up within 60 seconds (on by default).
+> cell turns up in time (3 minutes by default; 1, 3, 5 minutes or never).
 
 ## How Sailfish handles LTE, NR and friends
 
@@ -106,7 +106,8 @@ The same from Terminal (Developer mode):
 
 ```sh
 H=/usr/libexec/nr-mode/nr-mode-helper
-devel-su $H on          # switch on, printing every step
+devel-su $H on 300      # switch on, printing every step; revert after 300 s
+                        # without registration (default 60)
 devel-su $H on-keep     # same, without auto-revert
 devel-su $H off
 devel-su $H diag        # full report (root lets it read ofono's journal)
@@ -122,6 +123,13 @@ What to look for when NR only doesn't connect:
 - **NR cells visible, but only while LTE is connected**: that's usually 5G
   **NSA**, which needs an LTE anchor. NR only mode needs **SA**, which
   many operators haven't launched or only enable for some subscriptions.
+- **Right after a switch the modem is often still `searching`.** The
+  report shows how long ofono has been running. A first 5G SA scan after a
+  radio restart can take minutes, so check again after a while, or use
+  `watch`.
+- **A private or test network SIM** (unusual provider name, own MCC/MNC)
+  only registers on that network. If it's SA-only, its band has to be
+  supported and enabled in the modem firmware's operator profile.
 - **`Error N setting pref mode`** in the ofono lines: the modem firmware
   rejected NR only (mode 23).
 - **Registered but `Attached: false`**: the radio works, but data doesn't.
@@ -148,11 +156,11 @@ Needs Developer mode (Settings → Developer tools). Copy the RPM to the phone,
 then in Terminal:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/nr-mode-0.3.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/nr-mode-0.4.0-1.aarch64.rpm
 ```
 
 If `pkcon` refuses the unsigned package, use
-`devel-su rpm -i ~/Downloads/nr-mode-0.3.0-1.aarch64.rpm` instead.
+`devel-su rpm -i ~/Downloads/nr-mode-0.4.0-1.aarch64.rpm` instead.
 
 ## Tests
 

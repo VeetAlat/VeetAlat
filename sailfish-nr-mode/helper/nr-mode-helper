@@ -13,14 +13,17 @@
 # Neither needs ofono to list "nr" in AvailableTechnologies: that list only
 # mirrors the phone's ofono config, not what the modem can do.
 #
-# Usage: nr-mode-helper on|on-keep|off   switch, logging every step
+# Usage: nr-mode-helper on [seconds]     switch on, revert after 60 s (or
+#                                        [seconds]) without registration
+#        nr-mode-helper on-keep|off      switch without revert / switch off
 #        nr-mode-helper diag             print a full diagnostics report
 #        nr-mode-helper watch [seconds]  print live network state until ^C
 #        nr-mode-helper status           print "on" or "off"
 #        nr-mode-helper apply            act on /run/nr-mode/request (systemd)
 #
 # "on" reverts automatically when the modem has not registered to a network
-# within NR_MODE_REVERT_TIMEOUT seconds; "on-keep" does not.
+# within the timeout (NR_MODE_REVERT_TIMEOUT, default 60); "on-keep" does
+# not. A first 5G SA scan after a radio restart can take a few minutes.
 #
 # Everything the helper does is also appended to /run/nr-mode/log, which
 # the app shows on its Monitor page.
@@ -116,9 +119,19 @@ BEGIN { if (prefix == "") prefix = "" }
 {
     line = $0
     if (collecting) {
-        buf = buf " " trim(line)
         d += depth(line)
-        if (d <= 0) { out(key, buf); collecting = 0 }
+        t = trim(line)
+        # A nested dict entry arrives as "dict entry(", then "key   value )"
+        # with runs of spaces between the parts; turn it into "key = value".
+        if (t ~ /\)$/ && t != ")") {
+            sub(/[ \t]*\)$/, "", t)
+            gsub(/[ \t]+variant[ \t]+/, "  ", t)
+            gsub(/[ \t][ \t]+/, " = ", t)
+            buf = buf (entries++ ? "; " : " ") t
+        } else if (t != ")" && t != "dict entry(") {
+            buf = buf " " t
+        }
+        if (d <= 0) { out(key, buf); collecting = 0; entries = 0 }
         next
     }
     if ($1 ~ /^\// && only == "") { print prefix "[" $1 "]"; next }
@@ -294,8 +307,14 @@ log_modem_state() {
         "operator='$(get_prop "$m" NetworkRegistration Name)'" \
         "attached=$(get_prop "$m" ConnectionManager Attached)" \
         "bearer=$(get_prop "$m" ConnectionManager Bearer)"
-    cell=$(serving_cell "$m")
+    cells=$(list_cells "$m")
+    cell=$(echo "$cells" | grep SERVING | head -n 1 | sed 's/^ *//; s/ SERVING//')
     [ -n "$cell" ] && log "$m: serving cell: $cell"
+    log "$m: cells visible: $(echo "$cells" | grep -c -E 'SERVING|neighbour')" \
+        "(nr: $(echo "$cells" | grep -c '^ *nr ')," \
+        "lte: $(echo "$cells" | grep -c '^ *lte ')," \
+        "3G: $(echo "$cells" | grep -c '^ *wcdma ')," \
+        "2G: $(echo "$cells" | grep -c '^ *gsm '))"
 }
 
 registered() {
@@ -422,6 +441,10 @@ diag() {
     fi
     echo "    NR Mode: $(status)"
     echo "    ofono plugin: $PLUGIN ($OFONO_CONF)"
+    since=$(systemctl show ofono.service -p ActiveEnterTimestamp --value 2> /dev/null)
+    [ -n "$since" ] && echo "    ofono running since: $since" \
+        "($(( $(date +%s) - $(date -d "$since" +%s 2> /dev/null || date +%s) ))s;" \
+        "right after a restart the modem is often still searching)"
     echo "    configured technologies: $(configured_technologies | grep . || echo "not set (all)")"
     [ -f "$STATE_FILE" ] && echo "    Last helper state: $(cat "$STATE_FILE")"
     echo
@@ -447,10 +470,13 @@ diag() {
     done
 
     echo
-    echo "== ofono journal (last 40 lines)"
+    echo "== ofono journal, relevant lines this boot (last 40)"
     if command -v journalctl > /dev/null; then
-        journalctl -u ofono.service -n 40 --no-pager -o short 2> /dev/null | sed 's/^/    /' ||
-            echo "    (not readable, run as root)"
+        journalctl -u ofono.service -b --no-pager -o short 2> /dev/null |
+            grep -v -E "Excluding|Initializing|Connected to android" |
+            grep -i -E "pref|rat |network type|allowed|regist|error|warn|fail|reject|denied|nr" |
+            tail -n 40 | sed 's/^/    /'
+        echo "    (empty? run the report as root: devel-su $0 diag)"
     fi
     echo
     echo "== NR Mode helper log (last 40 lines)"
@@ -492,23 +518,31 @@ status() {
 case ${1:-} in
     apply)
         # Only the first word of the request counts, anything else is noise.
-        req=$(head -c 32 "$REQUEST_FILE" 2>/dev/null | tr -cd 'a-z-' )
+        req=$(head -c 32 "$REQUEST_FILE" 2>/dev/null | tr -cd 'a-z0-9-')
         case $req in
             on) do_on no ;;
+            on-60|on-180|on-300) REVERT_TIMEOUT=${req#on-}; do_on no ;;
             on-keep) do_on yes ;;
             off) do_off ;;
             diag) write_diag ;;
             *) set_state "error: ignoring unknown request '$req'"; exit 1 ;;
         esac
         ;;
-    on) do_on no ;;
+    on)
+        case ${2:-} in
+            "") ;;
+            *[!0-9]*) echo "on: timeout must be a number of seconds" >&2; exit 2 ;;
+            *) REVERT_TIMEOUT=$2 ;;
+        esac
+        do_on no
+        ;;
     on-keep) do_on yes ;;
     off) do_off ;;
     diag) diag ;;
     watch) watch_state "${2:-2}" ;;
     status) status ;;
     *)
-        echo "Usage: $0 on|on-keep|off|diag|watch [seconds]|status|apply" >&2
+        echo "Usage: $0 on [seconds]|on-keep|off|diag|watch [seconds]|status|apply" >&2
         exit 2
         ;;
 esac
