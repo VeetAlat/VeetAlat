@@ -3,7 +3,7 @@ import Sailfish.Silica 1.0
 import "../pages"
 
 CoverBackground {
-    Network { id: network }
+    property Network network
 
     Column {
         anchors.centerIn: parent
@@ -14,13 +14,18 @@ CoverBackground {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: Theme.fontSizeExtraLarge
+            fontSizeMode: Text.HorizontalFit
             text: network.technologyName(network.technology)
         }
         Label {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             color: Theme.secondaryColor
-            text: network.strength + " %"
+            font.pixelSize: Theme.fontSizeSmall
+            wrapMode: Text.Wrap
+            text: network.servingCell
+                  ? network.cellSignal(network.servingCell).split(" · ")[0]
+                  : network.strength + " %"
         }
         Label {
             width: parent.width

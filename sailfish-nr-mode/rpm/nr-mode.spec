@@ -1,6 +1,6 @@
 Name:       nr-mode
 Summary:    Lock the modem to 5G NR standalone (NR only)
-Version:    0.1.0
+Version:    0.2.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat

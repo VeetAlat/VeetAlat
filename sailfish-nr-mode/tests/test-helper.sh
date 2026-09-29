@@ -125,6 +125,42 @@ check "drop-in gone after revert" "[ ! -f '$DROPIN' ]"
 check "preference back to nr after revert" \
     "tail -n1 '$FAKE_OFONO_LOG' | grep -qx 'TechnologyPreference=nr'"
 
+echo "--- logging"
+LOG=$NR_MODE_ROOT/run/nr-mode/log
+check "log file written" "[ -s '$LOG' ]"
+check "log lines are timestamped" "head -n1 '$LOG' | grep -Eq '^[0-9]{2}:[0-9]{2}:[0-9]{2} '"
+check "log records the preference change" "grep -q 'TechnologyPreference -> lte (ok' '$LOG'"
+check "log records registration state" "grep -q 'registration=registered tech=nr strength=62%' '$LOG'"
+check "log records the serving cell" "grep -q 'serving cell: nr .*ssRsrp=-95dBm' '$LOG'"
+check "log records the revert" "grep -q 'no registration within 2s' '$LOG'"
+
+echo "--- diag"
+DIAG=$("$HELPER" diag 2>&1)
+# shellcheck disable=SC2317  # used inside check's eval
+has() { printf '%s\n' "$DIAG" | grep -q -- "$1"; }
+check "diag shows SIM provider" "has 'ServiceProviderName: Fake Telecom'"
+check "diag masks the IMSI" "has 'SubscriberIdentity: 24491…90' && ! has '244911234567890'"
+check "diag masks the ICCID" "! has '8935891000012345678'"
+check "diag shows booleans without type word" "has 'Present: true'"
+check "diag shows the APN" "has 'AccessPointName: internet'"
+check "diag hides APN password" "has 'Password: \*\*\*' && ! has secret"
+check "diag shows the context header" "has '\[/ril_0/context1\]'"
+check "diag shows available technologies" "has 'AvailableTechnologies: gsm umts lte nr'"
+check "diag converts NR signal" "has 'nr SERVING .*ssRsrp=-95dBm ssRsrq=-11dB ssSinr=14dB'"
+check "diag converts LTE signal" "has 'lte neighbour .*rsrp=-101dBm rsrq=-9dB rssnr=12.5dB'"
+check "diag includes binder config" "has 'ExpectSlots=slot1,slot2'"
+
+printf 'diag\n' > "$NR_MODE_ROOT/run/nr-mode/request"
+"$HELPER" apply 2> /dev/null
+check "diag request writes diag.txt" "grep -q 'Cells the modem can see' '$NR_MODE_ROOT/run/nr-mode/diag.txt'"
+
+echo "--- watch"
+echo registered > "$FAKE_OFONO_STATUS_FILE"
+watch_ok=no
+timeout 3 "$HELPER" watch 1 2>&1 |
+    grep -q '/ril_0 registered .*nr .*62% Fake Telecom' && watch_ok=yes
+check "watch prints live state" "[ $watch_ok = yes ]"
+
 echo "--- junk request"
 printf 'rm -rf /\n' > "$NR_MODE_ROOT/run/nr-mode/request"
 if "$HELPER" apply 2> /dev/null; then rc=0; else rc=$?; fi

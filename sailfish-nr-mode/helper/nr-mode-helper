@@ -8,12 +8,17 @@
 # that to 23 (RADIO_PREF_NET_NR_ONLY) and selecting "lte" makes the plugin
 # send an NR-only access family bitmap to the modem, i.e. 5G standalone.
 #
-# Usage: nr-mode-helper apply     read /run/nr-mode/request and act on it
-#        nr-mode-helper on|on-keep|off
-#        nr-mode-helper status
+# Usage: nr-mode-helper on|on-keep|off   switch, logging every step
+#        nr-mode-helper diag             print a full diagnostics report
+#        nr-mode-helper watch [seconds]  print live network state until ^C
+#        nr-mode-helper status           print "on" or "off"
+#        nr-mode-helper apply            act on /run/nr-mode/request (systemd)
 #
 # "on" reverts automatically when the modem has not registered to a network
 # within NR_MODE_REVERT_TIMEOUT seconds; "on-keep" does not.
+#
+# Everything the helper does is also appended to /run/nr-mode/log, which
+# the app shows on its Monitor page.
 
 set -u
 
@@ -22,6 +27,8 @@ ROOT=${NR_MODE_ROOT:-}
 RUN_DIR=$ROOT/run/nr-mode
 REQUEST_FILE=$RUN_DIR/request
 STATE_FILE=$RUN_DIR/state
+LOG_FILE=$RUN_DIR/log
+DIAG_FILE=$RUN_DIR/diag.txt
 LIB_DIR=$ROOT/var/lib/nr-mode
 SAVED_PREFS=$LIB_DIR/saved-preferences
 OFONO_CONF=$ROOT/etc/ofono/binder.conf
@@ -30,15 +37,27 @@ DROPIN=$DROPIN_DIR/90-nr-mode.conf
 
 RADIO_PREF_NET_NR_ONLY=23
 REVERT_TIMEOUT=${NR_MODE_REVERT_TIMEOUT:-60}
+START_EPOCH=$(date +%s)
 
 log() {
-    echo "nr-mode: $*" >&2
+    line="$(date +%H:%M:%S) $*"
+    echo "$line" >&2
+    if mkdir -p "$RUN_DIR" 2> /dev/null && [ -w "$RUN_DIR" ]; then
+        echo "$line" >> "$LOG_FILE"
+    fi
+}
+
+trim_log() {
+    [ -f "$LOG_FILE" ] || return 0
+    if [ "$(wc -l < "$LOG_FILE")" -gt 2000 ]; then
+        tail -n 1000 "$LOG_FILE" > "$LOG_FILE.tmp" && mv -f "$LOG_FILE.tmp" "$LOG_FILE"
+    fi
 }
 
 set_state() {
     mkdir -p "$RUN_DIR"
     printf '%s\n' "$*" > "$STATE_FILE.tmp" && mv -f "$STATE_FILE.tmp" "$STATE_FILE"
-    log "$*"
+    log "[state] $*"
 }
 
 ofono_call() {
@@ -50,34 +69,81 @@ ofono_call() {
         --dest=org.ofono "$path" "$method" "$@" 2>/dev/null
 }
 
+# Turns dbus-send --print-reply=literal output of GetProperties-style calls
+# into "Key: value" lines. Literal output puts a dict entry's key, the word
+# "variant", a type word for non-strings ("boolean true", "int32 95") and
+# the value on one line; arrays continue on the following lines up to the
+# matching "]". Object paths starting a struct (GetModems, GetContexts)
+# become headers. Identifiers that could track the user are masked.
+# shellcheck disable=SC2016  # awk program, not shell
+PROPS_AWK='
+function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+function depth(s,   o, c, t) {
+    t = s; o = gsub(/\[/, "", t); t = s; c = gsub(/\]/, "", t); return o - c
+}
+function mask(s) {
+    if (length(s) <= 6) return "***"
+    return substr(s, 1, 5) "…" substr(s, length(s) - 1)
+}
+function out(k, v) {
+    gsub(/[ \t]+/, " ", v)
+    gsub(/(boolean|u?int(16|32|64)|byte|double|object path|string) /, "", v)
+    sub(/^array \[ ?/, "", v); sub(/ ?\]$/, "", v); sub(/ ?\)$/, "", v)
+    v = trim(v)
+    if (k ~ /^(SubscriberIdentity|CardIdentifier|SubscriberNumbers)$/) v = mask(v)
+    if (k ~ /^Password$/ && v != "") v = "***"
+    if (only == "") print prefix k ": " v
+    else if (k == only) { print v; exit }
+}
+BEGIN { if (prefix == "") prefix = "" }
+{
+    line = $0
+    if (collecting) {
+        buf = buf " " trim(line)
+        d += depth(line)
+        if (d <= 0) { out(key, buf); collecting = 0 }
+        next
+    }
+    if ($1 ~ /^\// && only == "") { print prefix "[" $1 "]"; next }
+    if ($2 == "variant") {
+        key = $1
+        val = line
+        sub(/^[ \t]*[^ \t]+[ \t]+variant[ \t]+/, "", val)
+        d = depth(val)
+        if (d > 0) { collecting = 1; buf = val; next }
+        out(key, val)
+    }
+}'
+
+# Prints GetProperties of org.ofono.<iface> on a modem as indented lines.
+show_props() {
+    ofono_call "$1" "org.ofono.$2.GetProperties" | awk -v prefix="    " "$PROPS_AWK"
+}
+
 list_modems() {
     ofono_call / org.ofono.Manager.GetModems |
         grep -o '/[A-Za-z0-9_/]*' | grep -v '^/$' | sort -u
 }
 
-# Prints the value of a string property, e.g. get_prop /ril_0 RadioSettings
-# TechnologyPreference. dbus-send --print-reply=literal puts a dict entry's
-# key, the word "variant" and a simple value on one line.
+# Prints one property, e.g. get_prop /ril_0 RadioSettings TechnologyPreference
 get_prop() {
-    ofono_call "$1" "org.ofono.$2.GetProperties" |
-        awk -v key="$3" '$1 == key && $2 == "variant" { print $3; exit }'
+    ofono_call "$1" "org.ofono.$2.GetProperties" | awk -v only="$3" "$PROPS_AWK"
 }
 
-# True if RadioSettings.AvailableTechnologies contains "nr". The array
-# elements follow the key on the next line(s), up to the closing "]".
 has_nr() {
-    ofono_call "$1" org.ofono.RadioSettings.GetProperties |
-        awk '$1 == "AvailableTechnologies" { f = 1; next }
-             f { for (i = 1; i <= NF; i++) {
-                     if ($i == "nr") ok = 1
-                     if ($i == "]") f = 0
-                 } }
-             END { exit !ok }'
+    case " $(get_prop "$1" RadioSettings AvailableTechnologies) " in
+        *" nr "*) return 0 ;;
+    esac
+    return 1
 }
 
 set_pref() {
-    ofono_call "$1" org.ofono.RadioSettings.SetProperty \
-        string:TechnologyPreference "variant:string:$2" > /dev/null
+    if ofono_call "$1" org.ofono.RadioSettings.SetProperty \
+            string:TechnologyPreference "variant:string:$2" > /dev/null; then
+        log "$1: TechnologyPreference -> $2 (ok, reads back as '$(get_prop "$1" RadioSettings TechnologyPreference)')"
+    else
+        log "$1: TechnologyPreference -> $2 FAILED (ofono refused the change)"
+    fi
 }
 
 nr_modems() {
@@ -90,10 +156,15 @@ wait_for_radio_settings() {
     i=0
     while [ $i -lt 30 ]; do
         modems=$(nr_modems)
-        [ -n "$modems" ] && { echo "$modems"; return 0; }
+        if [ -n "$modems" ]; then
+            log "ofono is back after ${i}s, NR-capable modems: $(echo "$modems" | tr '\n' ' ')"
+            echo "$modems"
+            return 0
+        fi
         sleep 1
         i=$((i + 1))
     done
+    log "ofono still has no NR-capable modem after 30s"
     return 1
 }
 
@@ -118,10 +189,71 @@ write_dropin() {
             echo "lteNetworkMode=$RADIO_PREF_NET_NR_ONLY"
         done
     } > "$DROPIN.tmp" && mv -f "$DROPIN.tmp" "$DROPIN"
+    log "wrote $DROPIN: $(grep -c lteNetworkMode "$DROPIN") x lteNetworkMode=$RADIO_PREF_NET_NR_ONLY ($(grep -o '^\[[a-zA-Z0-9]*\]' "$DROPIN" | tr '\n' ' '))"
 }
 
 restart_ofono() {
-    systemctl restart ofono.service
+    log "restarting ofono (calls and mobile data drop for a moment)"
+    if systemctl restart ofono.service; then
+        log "ofono restarted"
+    else
+        log "systemctl restart ofono failed"
+    fi
+}
+
+# ofono's own complaints since this run started, e.g. the modem rejecting
+# the requested network mode ("Error N setting pref mode").
+ofono_journal() {
+    command -v journalctl > /dev/null || return 0
+    journalctl -u ofono.service --since "@$START_EPOCH" --no-pager -o cat 2> /dev/null |
+        grep -i -E "pref|rat |error|warn|fail|reject|denied" | tail -n "${1:-20}"
+}
+
+log_ofono_journal() {
+    ofono_journal 20 | while IFS= read -r l; do log "  ofono: $l"; done
+}
+
+# ---- cells -----------------------------------------------------------------
+
+# Serving and neighbour cells from Sailfish's CellInfo interface, one per
+# line, with signal values converted to dBm / dB. Android reports RSRP and
+# RSRQ as positive numbers meaning negative dBm / dB, and LTE RSSNR in
+# tenths of a dB.
+list_cells() {
+    paths=$(ofono_call "$1" org.nemomobile.ofono.CellInfo.GetCells |
+        grep -o '/[A-Za-z0-9_/]*cell_[0-9]*')
+    [ -n "$paths" ] || { echo "    (no cells reported)"; return; }
+    for c in $paths; do
+        type=$(ofono_call "$c" org.nemomobile.ofono.Cell.GetType | awk 'NF { print $NF; exit }')
+        reg=$(ofono_call "$c" org.nemomobile.ofono.Cell.GetRegistered | awk 'NF { print $NF; exit }')
+        props=$(ofono_call "$c" org.nemomobile.ofono.Cell.GetProperties |
+            awk -v prefix="" "$PROPS_AWK" | awk -F': ' '
+                $1 ~ /^(rsrp|ssRsrp|csiRsrp)$/ { printf " %s=-%sdBm", $1, $2; next }
+                $1 ~ /^(rsrq|ssRsrq|csiRsrq)$/ { printf " %s=-%sdB", $1, $2; next }
+                $1 == "rssnr" { printf " rssnr=%.1fdB", $2 / 10; next }
+                $1 ~ /^(ssSinr|csiSinr)$/ { printf " %s=%sdB", $1, $2; next }
+                $1 ~ /^(mcc|mnc|pci|tac|earfcn|nrarfcn|ci|nci|signalStrength)$/ { printf " %s=%s", $1, $2 }')
+        if [ "$reg" = true ]; then role=SERVING; else role=neighbour; fi
+        echo "    $type $role$props"
+    done
+}
+
+serving_cell() {
+    list_cells "$1" | grep SERVING | head -n 1 | sed 's/^ *//; s/ SERVING//'
+}
+
+# ---- switching ---------------------------------------------------------------
+
+log_modem_state() {
+    m=$1
+    log "$m: registration=$(get_prop "$m" NetworkRegistration Status)" \
+        "tech=$(get_prop "$m" NetworkRegistration Technology)" \
+        "strength=$(get_prop "$m" NetworkRegistration Strength)%" \
+        "operator='$(get_prop "$m" NetworkRegistration Name)'" \
+        "attached=$(get_prop "$m" ConnectionManager Attached)" \
+        "bearer=$(get_prop "$m" ConnectionManager Bearer)"
+    cell=$(serving_cell "$m")
+    [ -n "$cell" ] && log "$m: serving cell: $cell"
 }
 
 registered() {
@@ -134,10 +266,16 @@ registered() {
 }
 
 do_off() {
+    trim_log
+    log "==== switching back to normal network selection"
     set_state "busy: restoring normal mode"
-    rm -f "$DROPIN"
+    if [ -f "$DROPIN" ]; then
+        rm -f "$DROPIN"
+        log "removed $DROPIN"
+    fi
     restart_ofono
     modems=$(wait_for_radio_settings) || {
+        log_ofono_journal
         set_state "error: ofono did not come back after restart"
         return 1
     }
@@ -154,11 +292,19 @@ do_off() {
 
 do_on() {
     keep=$1
+    trim_log
+    log "==== switching to NR only (auto-revert: $([ "$keep" = yes ] && echo off || echo "${REVERT_TIMEOUT}s"))"
     modems=$(nr_modems)
     if [ -z "$modems" ]; then
+        log "modems found: $(list_modems | tr '\n' ' '); none lists 'nr' in AvailableTechnologies"
         set_state "error: no modem advertises 5G NR support"
         return 1
     fi
+    for m in $modems; do
+        log "$m: before: preference=$(get_prop "$m" RadioSettings TechnologyPreference)," \
+            "available=[$(get_prop "$m" RadioSettings AvailableTechnologies)]"
+        log_modem_state "$m"
+    done
 
     set_state "busy: switching to NR only"
     if [ ! -f "$DROPIN" ]; then
@@ -172,6 +318,7 @@ do_on() {
     write_dropin
     restart_ofono
     modems=$(wait_for_radio_settings) || {
+        log_ofono_journal
         set_state "error: ofono did not come back after restart"
         return 1
     }
@@ -180,6 +327,9 @@ do_on() {
     done
 
     if [ "$keep" = yes ]; then
+        sleep 3
+        for m in $modems; do log_modem_state "$m"; done
+        log_ofono_journal
         set_state "on"
         return 0
     fi
@@ -187,7 +337,12 @@ do_on() {
     set_state "busy: waiting for a 5G SA cell (${REVERT_TIMEOUT}s)"
     i=0
     while [ $i -lt "$REVERT_TIMEOUT" ]; do
+        if [ $((i % 6)) -eq 0 ]; then
+            for m in $modems; do log_modem_state "$m"; done
+        fi
         if registered "$modems"; then
+            for m in $modems; do log_modem_state "$m"; done
+            log_ofono_journal
             set_state "on"
             return 0
         fi
@@ -195,9 +350,88 @@ do_on() {
         i=$((i + 2))
     done
 
-    log "no registration within ${REVERT_TIMEOUT}s, reverting"
+    log "no registration within ${REVERT_TIMEOUT}s"
+    log_ofono_journal
+    log "hint: run 'nr-mode-helper diag' in normal mode and look for 'nr' cells;" \
+        "if there are none, there is no 5G here the phone can see"
     do_off
     set_state "reverted: no 5G SA network found"
+}
+
+# ---- reports -----------------------------------------------------------------
+
+diag() {
+    echo "NR Mode diagnostics, $(date '+%Y-%m-%d %H:%M:%S')"
+    echo
+    echo "== System"
+    # shellcheck disable=SC1091
+    echo "    $(. /etc/os-release 2> /dev/null && echo "${PRETTY_NAME:-unknown} ${VERSION_ID:-}")"
+    if command -v rpm > /dev/null; then
+        for p in ofono ofono-binder-plugin libgbinder-radio nr-mode; do
+            echo "    $(rpm -q "$p" 2> /dev/null | head -n 1)"
+        done
+    fi
+    echo "    NR Mode: $(status)"
+    [ -f "$STATE_FILE" ] && echo "    Last helper state: $(cat "$STATE_FILE")"
+    echo
+    echo "== ofono binder config (non-comment lines)"
+    for f in "$OFONO_CONF" "$DROPIN_DIR"/*.conf; do
+        [ -f "$f" ] || continue
+        echo "    # $f"
+        grep -v -E '^[[:space:]]*(#|$)' "$f" | sed 's/^/    /'
+    done
+
+    for m in $(list_modems); do
+        echo
+        echo "======== Modem $m"
+        for iface in Modem SimManager NetworkRegistration RadioSettings ConnectionManager; do
+            echo "== $iface"
+            show_props "$m" "$iface"
+        done
+        echo "== Data contexts (APNs)"
+        ofono_call "$m" org.ofono.ConnectionManager.GetContexts |
+            awk -v prefix="    " "$PROPS_AWK"
+        echo "== Cells the modem can see"
+        list_cells "$m"
+    done
+
+    echo
+    echo "== ofono journal (last 40 lines)"
+    if command -v journalctl > /dev/null; then
+        journalctl -u ofono.service -n 40 --no-pager -o short 2> /dev/null | sed 's/^/    /' ||
+            echo "    (not readable, run as root)"
+    fi
+    echo
+    echo "== NR Mode helper log (last 40 lines)"
+    tail -n 40 "$LOG_FILE" 2> /dev/null | sed 's/^/    /'
+}
+
+write_diag() {
+    mkdir -p "$RUN_DIR"
+    diag > "$DIAG_FILE.tmp" 2>&1
+    chmod 0644 "$DIAG_FILE.tmp"
+    mv -f "$DIAG_FILE.tmp" "$DIAG_FILE"
+    log "diagnostics written to $DIAG_FILE"
+}
+
+watch_state() {
+    interval=${1:-2}
+    echo "Watching network state every ${interval}s, Ctrl+C to stop."
+    while :; do
+        for m in $(list_modems); do
+            printf '%s %s %-10s %-4s %3s%% %-14s pref=%-3s attached=%-5s bearer=%-5s %s\n' \
+                "$(date +%H:%M:%S)" "$m" \
+                "$(get_prop "$m" NetworkRegistration Status)" \
+                "$(get_prop "$m" NetworkRegistration Technology)" \
+                "$(get_prop "$m" NetworkRegistration Strength)" \
+                "$(get_prop "$m" NetworkRegistration Name | cut -c1-14)" \
+                "$(get_prop "$m" RadioSettings TechnologyPreference)" \
+                "$(get_prop "$m" ConnectionManager Attached)" \
+                "$(get_prop "$m" ConnectionManager Bearer)" \
+                "$(serving_cell "$m")"
+        done
+        sleep "$interval"
+    done
 }
 
 status() {
@@ -212,15 +446,18 @@ case ${1:-} in
             on) do_on no ;;
             on-keep) do_on yes ;;
             off) do_off ;;
+            diag) write_diag ;;
             *) set_state "error: ignoring unknown request '$req'"; exit 1 ;;
         esac
         ;;
     on) do_on no ;;
     on-keep) do_on yes ;;
     off) do_off ;;
+    diag) diag ;;
+    watch) watch_state "${2:-2}" ;;
     status) status ;;
     *)
-        echo "Usage: $0 apply|on|on-keep|off|status" >&2
+        echo "Usage: $0 on|on-keep|off|diag|watch [seconds]|status|apply" >&2
         exit 2
         ;;
 esac

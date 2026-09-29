@@ -47,6 +47,73 @@ private slots:
         QCOMPARE(f.readAll(), QByteArray("on-keep\n"));
     }
 
+    void diagRequestDoesNotGoBusy()
+    {
+        QTemporaryDir root;
+        QDir(root.path()).mkpath("run/nr-mode");
+        NrControl control(root.path());
+        QVERIFY(control.request("diag"));
+        QVERIFY(!control.busy());
+        QFile f(root.path() + "/run/nr-mode/request");
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(f.readAll(), QByteArray("diag\n"));
+    }
+
+    void followsLogAppendsAndRotation()
+    {
+        QTemporaryDir root;
+        QDir(root.path()).mkpath("run/nr-mode");
+        const QString log = root.path() + "/run/nr-mode/log";
+        write(log, "10:00:00 first\n");
+        NrControl control(root.path());
+        QCOMPARE(control.log(), QStringLiteral("10:00:00 first"));
+
+        // Helper style append.
+        {
+            QFile f(log);
+            QVERIFY(f.open(QIODevice::Append));
+            f.write("10:00:01 second\n");
+        }
+        QTRY_VERIFY(control.log().endsWith("10:00:01 second"));
+
+        // Helper style trim: replace the file, then keep appending.
+        write(log + ".tmp", "10:00:02 trimmed\n");
+        QFile::remove(log);
+        QFile::rename(log + ".tmp", log);
+        QTRY_COMPARE(control.log(), QStringLiteral("10:00:02 trimmed"));
+        {
+            QFile f(log);
+            QVERIFY(f.open(QIODevice::Append));
+            f.write("10:00:03 after trim\n");
+        }
+        QTRY_VERIFY(control.log().endsWith("10:00:03 after trim"));
+    }
+
+    void logShowsOnlyTheTail()
+    {
+        QTemporaryDir root;
+        QDir(root.path()).mkpath("run/nr-mode");
+        QByteArray lines;
+        for (int i = 0; i < 500; i++) {
+            lines += QByteArray::number(i) + '\n';
+        }
+        write(root.path() + "/run/nr-mode/log", lines);
+        NrControl control(root.path());
+        QCOMPARE(control.log().split('\n').size(), 300);
+        QVERIFY(control.log().endsWith("499"));
+    }
+
+    void readsDiagnostics()
+    {
+        QTemporaryDir root;
+        QDir(root.path()).mkpath("run/nr-mode");
+        NrControl control(root.path());
+        QVERIFY(control.diagnostics().isEmpty());
+        write(root.path() + "/run/nr-mode/diag.txt.tmp", "NR Mode diagnostics\n== SIM\n");
+        QFile::rename(root.path() + "/run/nr-mode/diag.txt.tmp", root.path() + "/run/nr-mode/diag.txt");
+        QTRY_VERIFY(control.diagnostics().startsWith("NR Mode diagnostics"));
+    }
+
     void rejectsUnknownRequests()
     {
         QTemporaryDir root;

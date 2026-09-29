@@ -62,12 +62,12 @@ knows, it is.
 
 ## Architecture
 
-Only the helper runs as root, and it only accepts three exact words.
+Only the helper runs as root, and it only accepts four exact words.
 
 | Part | What it does |
 |---|---|
-| `qml/` | Silica UI. Reads live network state with `QOfono` (`OfonoNetworkRegistration`, `OfonoRadioSettings`). |
-| `src/nrcontrol.*` | ~100 lines of C++. Writes `on` / `on-keep` / `off` to `/run/nr-mode/request`, watches `/run/nr-mode/state`. |
+| `qml/` | Silica UI. Live network, SIM and APN state via `QOfono`; per-cell signal via `Nemo.DBus` and ofono's `org.nemomobile.ofono.CellInfo`. |
+| `src/nrcontrol.*` | Small C++ class. Writes `on` / `on-keep` / `off` / `diag` to `/run/nr-mode/request`, watches the state, log and diagnostics files. |
 | `systemd/nr-mode-apply.path` | Starts the helper whenever the request file is written. |
 | `helper/nr-mode-helper` | POSIX `sh` root helper: drop-in, ofono restart, `dbus-send`, auto-revert. |
 | `systemd/tmpfiles.d/` | Creates `/run/nr-mode`, writable only by group `privileged`. |
@@ -77,13 +77,44 @@ so it can write the request file. That's why it's launched without a booster
 and with `Sandboxing=Disabled`. It also means **it can't go in the Jolla
 Store (Harbour)**. Ship it via OpenRepos or Chum instead.
 
-You can also use the helper by hand over SSH:
+## Monitoring and troubleshooting
+
+In the app, pull down on the main page:
+
+- **Monitor and log**: a live timeline of every change (registration,
+  technology, serving cell with RSRP/RSRQ/SINR, data attach, APN bearer,
+  number of visible 5G cells) plus the helper's step-by-step log.
+- **Diagnostics report**: modem, SIM, network, radio settings, data contexts
+  (APNs), every visible cell with signal values, the ofono config and
+  ofono's own recent log. IMSI, ICCID and APN passwords are masked.
+
+Both have a pull-down "Copy" item, handy for pasting into a bug report.
+
+The same from Terminal (Developer mode):
 
 ```sh
-devel-su /usr/libexec/nr-mode/nr-mode-helper on-keep   # NR only, no revert
-devel-su /usr/libexec/nr-mode/nr-mode-helper off
-cat /run/nr-mode/state
+H=/usr/libexec/nr-mode/nr-mode-helper
+devel-su $H on          # switch on, printing every step
+devel-su $H on-keep     # same, without auto-revert
+devel-su $H off
+devel-su $H diag        # full report (root lets it read ofono's journal)
+$H watch                # live one-line status every 2 s, Ctrl+C to stop
+cat /run/nr-mode/log    # everything the helper has done
 ```
+
+What to look for when NR only doesn't connect:
+
+- **`5G NR cells visible: 0`** (or no `nr` lines under "Cells the modem can
+  see" in normal mode): the phone can't see any 5G here. No setting fixes
+  that.
+- **NR cells visible, but only while LTE is connected**: that's usually 5G
+  **NSA**, which needs an LTE anchor. NR only mode needs **SA**, which
+  many operators haven't launched or only enable for some subscriptions.
+- **`Error N setting pref mode`** in the ofono lines: the modem firmware
+  rejected NR only (mode 23).
+- **Registered but `Attached: false`**: the radio works, but data doesn't.
+  Check the APN; some operators use a different APN or need provisioning
+  for SA.
 
 ## Building
 
@@ -105,11 +136,11 @@ Needs Developer mode (Settings → Developer tools). Copy the RPM to the phone,
 then in Terminal:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/nr-mode-0.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/nr-mode-0.2.0-1.aarch64.rpm
 ```
 
 If `pkcon` refuses the unsigned package, use
-`devel-su rpm -i ~/Downloads/nr-mode-0.1.0-1.aarch64.rpm` instead.
+`devel-su rpm -i ~/Downloads/nr-mode-0.2.0-1.aarch64.rpm` instead.
 
 ## Tests
 

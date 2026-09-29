@@ -1,13 +1,15 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import Nemo.Configuration 1.0
+import QOfono 0.2
 
 Page {
     id: page
 
-    allowedOrientations: Orientation.All
+    property Network network
+    property EventLog events
 
-    Network { id: network }
+    allowedOrientations: Orientation.All
 
     ConfigurationValue {
         id: autoRevert
@@ -25,9 +27,31 @@ Page {
         return text.charAt(0).toUpperCase() + text.substring(1)
     }
 
+    function yesNo(value) { return value ? "Yes" : "No" }
+
+    function pinName(pin) {
+        switch (pin) {
+        case OfonoSimManager.NoPin: return "None"
+        case OfonoSimManager.SimPin: return "PIN required"
+        case OfonoSimManager.SimPuk: return "PUK required (SIM blocked)"
+        default: return "Locked (" + pin + ")"
+        }
+    }
+
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: column.height + Theme.paddingLarge
+
+        PullDownMenu {
+            MenuItem {
+                text: "Diagnostics report"
+                onClicked: pageStack.push(Qt.resolvedUrl("DiagnosticsPage.qml"))
+            }
+            MenuItem {
+                text: "Monitor and log"
+                onClicked: pageStack.push(Qt.resolvedUrl("MonitorPage.qml"), { events: page.events })
+            }
+        }
 
         VerticalScrollDecorator { }
 
@@ -36,13 +60,6 @@ Page {
             width: parent.width
 
             PageHeader { title: "NR Mode" }
-
-            SectionHeader { text: "Network" }
-
-            DetailItem { label: "Operator"; value: network.operatorName || "–" }
-            DetailItem { label: "Technology"; value: network.technologyName(network.technology) }
-            DetailItem { label: "Signal"; value: network.strength + " %" }
-            DetailItem { label: "Registration"; value: network.status || "–" }
 
             SectionHeader { text: "Mode" }
 
@@ -88,6 +105,74 @@ Page {
                 wrapMode: Text.Wrap
                 color: Theme.errorColor
                 text: "This modem does not report 5G NR support."
+            }
+
+            SectionHeader { text: "Network" }
+
+            DetailItem { label: "Operator"; value: network.operatorName || "–" }
+            DetailItem { label: "Registration"; value: network.status || "–" }
+            DetailItem { label: "Technology"; value: network.technologyName(network.technology) }
+            DetailItem { label: "Signal"; value: network.strength + " %" }
+            DetailItem {
+                label: "Network code"
+                value: network.mcc ? network.mcc + " " + network.mnc : "–"
+            }
+            DetailItem { label: "Preferred mode"; value: network.preference || "–" }
+            DetailItem {
+                label: "Modem supports"
+                value: network.availableTechnologies.join(", ") || "–"
+            }
+
+            SectionHeader { text: "Cells" }
+
+            DetailItem {
+                label: "Serving cell"
+                value: network.servingCell ? network.cellTypeName(network.servingCell.type) : "None"
+            }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                visible: !!network.servingCell
+                wrapMode: Text.Wrap
+                horizontalAlignment: Text.AlignRight
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.highlightColor
+                text: network.cellSignal(network.servingCell)
+            }
+            DetailItem {
+                label: "Cells visible"
+                value: network.cells.length + " (" + network.nrCellCount + " 5G NR)"
+            }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                visible: network.cells.length > 0 && network.nrCellCount === 0
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                text: "The modem sees no 5G NR cell here, so NR only mode can't connect."
+            }
+
+            SectionHeader { text: "SIM" }
+
+            DetailItem { label: "Present"; value: page.yesNo(network.simPresent) }
+            DetailItem { label: "Provider"; value: network.simProvider || "–" }
+            DetailItem {
+                label: "Home network"
+                value: network.simMcc ? network.simMcc + " " + network.simMnc : "–"
+            }
+            DetailItem { label: "PIN"; value: page.pinName(network.simPinRequired) }
+
+            SectionHeader { text: "Mobile data" }
+
+            DetailItem { label: "Data enabled"; value: page.yesNo(network.dataEnabled) }
+            DetailItem { label: "Attached"; value: page.yesNo(network.attached) }
+            DetailItem { label: "Bearer"; value: network.bearer || "none" }
+            DetailItem { label: "Roaming allowed"; value: page.yesNo(network.roamingAllowed) }
+
+            Repeater {
+                model: network.contexts
+                delegate: ContextItem { contextPath: modelData }
             }
 
             SectionHeader { text: "Before you switch" }

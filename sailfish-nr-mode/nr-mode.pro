@@ -12,7 +12,12 @@ HEADERS += \
 DISTFILES += \
     qml/nr-mode.qml \
     qml/cover/CoverPage.qml \
+    qml/pages/CellMonitor.qml \
+    qml/pages/ContextItem.qml \
+    qml/pages/DiagnosticsPage.qml \
+    qml/pages/EventLog.qml \
     qml/pages/MainPage.qml \
+    qml/pages/MonitorPage.qml \
     qml/pages/Network.qml \
     nr-mode.desktop \
     rpm/nr-mode.spec
