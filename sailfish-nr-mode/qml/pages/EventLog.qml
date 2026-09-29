@@ -46,6 +46,7 @@ QtObject {
             }
         }
         onNrCellCountChanged: eventLog.add("5G NR cells visible: " + network.nrCellCount)
+        onBandSummaryChanged: eventLog.add("Bands seen: " + (network.bandSummary || "none"))
     }
     property string lastServing: "-"
 

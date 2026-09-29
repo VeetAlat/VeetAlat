@@ -22,6 +22,9 @@ CELLS = {
         "nrarfcn": dbus.Int32(636666), "ssRsrp": dbus.Int32(95),
         "ssRsrq": dbus.Int32(11), "ssSinr": dbus.Int32(14),
         "nci": dbus.Int64(123456789)}),
+    MODEM + "/cell_2": ("nr", False, {
+        "pci": dbus.Int32(77), "nrarfcn": dbus.Int32(660000),
+        "ssRsrp": dbus.Int32(110)}),
     MODEM + "/cell_1": ("lte", False, {
         "mcc": dbus.Int32(244), "mnc": dbus.Int32(91), "pci": dbus.Int32(12),
         "earfcn": dbus.Int32(6300), "rsrp": dbus.Int32(101),

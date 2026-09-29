@@ -282,16 +282,59 @@ list_cells() {
         type=$(ofono_call "$c" org.nemomobile.ofono.Cell.GetType | awk 'NF { print $NF; exit }')
         reg=$(ofono_call "$c" org.nemomobile.ofono.Cell.GetRegistered | awk 'NF { print $NF; exit }')
         props=$(ofono_call "$c" org.nemomobile.ofono.Cell.GetProperties |
-            awk -v prefix="" "$PROPS_AWK" | awk -F': ' '
+            awk -v prefix="" "$PROPS_AWK" | awk -F': ' "$BAND_AWK"'
+                $1 == "nrarfcn" { printf " nrarfcn=%s(%s)", $2, nr_band($2); next }
+                $1 == "earfcn" { printf " earfcn=%s(%s)", $2, lte_band($2); next }''
                 $1 ~ /^(rsrp|ssRsrp|csiRsrp)$/ { printf " %s=-%sdBm", $1, $2; next }
                 $1 ~ /^(rsrq|ssRsrq|csiRsrq)$/ { printf " %s=-%sdB", $1, $2; next }
                 $1 == "rssnr" { printf " rssnr=%.1fdB", $2 / 10; next }
                 $1 ~ /^(ssSinr|csiSinr)$/ { printf " %s=%sdB", $1, $2; next }
-                $1 ~ /^(mcc|mnc|pci|tac|earfcn|nrarfcn|ci|nci|signalStrength)$/ { printf " %s=%s", $1, $2 }')
+                $1 ~ /^(mcc|mnc|pci|tac|ci|nci|signalStrength)$/ { printf " %s=%s", $1, $2 }')
         if [ "$reg" = true ]; then role=SERVING; else role=neighbour; fi
         echo "    $type $role$props"
     done
 }
+
+# Frequency and band from channel numbers (3GPP TS 38.104 / 36.101), for
+# the bands used in Europe plus n77/n79. NR-ARFCN 620000-653333 is both n77
+# and n78 (3.3-3.8 GHz); only 653334-680000 (3.8-4.2 GHz) is n77 alone,
+# and that part needs a modem with real n77 support.
+# shellcheck disable=SC2016  # awk program, not shell
+BAND_AWK='
+function nr_mhz(n) {
+    if (n < 600000) return n * 0.005
+    if (n < 2016667) return 3000 + (n - 600000) * 0.015
+    return 24250.08 + (n - 2016667) * 0.06
+}
+function nr_band(n,   f, b) {
+    f = nr_mhz(n)
+    if (n >= 620000 && n <= 653333) b = "n77/n78"
+    else if (n > 653333 && n <= 680000) b = "n77 only"
+    else if (n >= 693334 && n <= 733333) b = "n79"
+    else if (n >= 460000 && n <= 480000) b = "n40"
+    else if (n >= 499200 && n <= 537999) b = "n41"
+    else if (n >= 422000 && n <= 434000) b = "n1"
+    else if (n >= 361000 && n <= 376000) b = "n3"
+    else if (n >= 185000 && n <= 192000) b = "n8"
+    else if (n >= 158200 && n <= 164200) b = "n20"
+    else if (n >= 151600 && n <= 160600) b = "n28"
+    else if (n >= 2054166 && n <= 2104165) b = "n258"
+    else b = "band ?"
+    return sprintf("%.1fMHz %s", f, b)
+}
+function lte_band(n) {
+    if (n < 600) return "b1"
+    if (n >= 1200 && n < 1950) return "b3"
+    if (n >= 2750 && n < 3450) return "b7"
+    if (n >= 3450 && n < 3800) return "b8"
+    if (n >= 6150 && n < 6450) return "b20"
+    if (n >= 9210 && n < 9660) return "b28"
+    if (n >= 37750 && n < 38250) return "b38"
+    if (n >= 38650 && n < 39650) return "b40"
+    if (n >= 41590 && n < 43590) return "b42"
+    if (n >= 43590 && n < 45590) return "b43"
+    return "band ?"
+}'
 
 serving_cell() {
     list_cells "$1" | grep SERVING | head -n 1 | sed 's/^ *//; s/ SERVING//'

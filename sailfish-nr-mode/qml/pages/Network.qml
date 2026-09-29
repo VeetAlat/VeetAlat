@@ -39,6 +39,8 @@ QtObject {
     readonly property var cells: cellMonitor.cells
     readonly property var servingCell: cellMonitor.serving
     readonly property int nrCellCount: cellMonitor.nrCellCount
+    readonly property string bandSummary: cellMonitor.bandSummary
+    readonly property bool n77OnlySeen: cellMonitor.n77OnlySeen
 
     function technologyName(tech) {
         switch (tech) {

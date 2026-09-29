@@ -146,7 +146,7 @@ check "log lines are timestamped" "head -n1 '$LOG' | grep -Eq '^[0-9]{2}:[0-9]{2
 check "log records the preference change" "grep -q 'TechnologyPreference -> lte (ok' '$LOG'"
 check "log records registration state" "grep -q 'registration=registered tech=nr strength=62%' '$LOG'"
 check "log records the serving cell" "grep -q 'serving cell: nr .*ssRsrp=-95dBm' '$LOG'"
-check "log counts visible cells" "grep -q 'cells visible: 2 (nr: 1, lte: 1, 3G: 0, 2G: 0)' '$LOG'"
+check "log counts visible cells" "grep -q 'cells visible: 3 (nr: 2, lte: 1, 3G: 0, 2G: 0)' '$LOG'"
 check "log records the revert" "grep -q 'no registration within 2s' '$LOG'"
 
 echo "--- diag"
@@ -165,6 +165,9 @@ check "diag shows the context header" "has '\[/ril_0/context1\]'"
 check "diag shows available technologies" "has 'AvailableTechnologies: gsm umts lte nr'"
 check "diag converts NR signal" "has 'nr SERVING .*ssRsrp=-95dBm ssRsrq=-11dB ssSinr=14dB'"
 check "diag converts LTE signal" "has 'lte neighbour .*rsrp=-101dBm rsrq=-9dB rssnr=12.5dB'"
+check "diag decodes n77/n78 overlap" "has 'nrarfcn=636666(3550.0MHz n77/n78)'"
+check "diag flags n77-only cells" "has 'nr neighbour .*nrarfcn=660000(3900.0MHz n77 only)'"
+check "diag decodes LTE band" "has 'earfcn=6300(b20)'"
 check "diag includes binder config" "has 'ExpectSlots=slot1,slot2'"
 
 printf 'diag\n' > "$NR_MODE_ROOT/run/nr-mode/request"

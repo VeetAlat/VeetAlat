@@ -20,6 +20,16 @@ QtObject {
         return null
     }
     readonly property int nrCellCount: count("nr")
+    // Distinct bands of all visible cells, e.g. "n77/n78, b20".
+    readonly property string bandSummary: {
+        var seen = []
+        for (var i = 0; i < cells.length; i++) {
+            var b = band(cells[i])
+            if (b && seen.indexOf(b) < 0) seen.push(b)
+        }
+        return seen.join(", ")
+    }
+    readonly property bool n77OnlySeen: bandSummary.indexOf("n77 only") >= 0
 
     function count(type) {
         var n = 0
@@ -39,6 +49,51 @@ QtObject {
         }
     }
 
+    // NR-ARFCN to MHz (3GPP TS 38.104).
+    function nrMhz(n) {
+        if (n < 600000) return n * 0.005
+        if (n < 2016667) return 3000 + (n - 600000) * 0.015
+        return 24250.08 + (n - 2016667) * 0.06
+    }
+
+    // Band from channel number, for the bands used in Europe plus n77/n79.
+    // 3.3-3.8 GHz is both n77 and n78; 3.8-4.2 GHz is n77 alone and needs
+    // a modem with real n77 support.
+    function band(cell) {
+        var p = cell.props || {}
+        var n
+        if (cell.type === "nr" && p.nrarfcn !== undefined) {
+            n = p.nrarfcn
+            if (n >= 620000 && n <= 653333) return "n77/n78"
+            if (n > 653333 && n <= 680000) return "n77 only"
+            if (n >= 693334 && n <= 733333) return "n79"
+            if (n >= 460000 && n <= 480000) return "n40"
+            if (n >= 499200 && n <= 537999) return "n41"
+            if (n >= 422000 && n <= 434000) return "n1"
+            if (n >= 361000 && n <= 376000) return "n3"
+            if (n >= 185000 && n <= 192000) return "n8"
+            if (n >= 158200 && n <= 164200) return "n20"
+            if (n >= 151600 && n <= 160600) return "n28"
+            if (n >= 2054166 && n <= 2104165) return "n258"
+            return "NR ?"
+        }
+        if (cell.type === "lte" && p.earfcn !== undefined) {
+            n = p.earfcn
+            if (n < 600) return "b1"
+            if (n >= 1200 && n < 1950) return "b3"
+            if (n >= 2750 && n < 3450) return "b7"
+            if (n >= 3450 && n < 3800) return "b8"
+            if (n >= 6150 && n < 6450) return "b20"
+            if (n >= 9210 && n < 9660) return "b28"
+            if (n >= 37750 && n < 38250) return "b38"
+            if (n >= 38650 && n < 39650) return "b40"
+            if (n >= 41590 && n < 43590) return "b42"
+            if (n >= 43590 && n < 45590) return "b43"
+            return "LTE ?"
+        }
+        return ""
+    }
+
     // One-line summary of the signal values a cell reports.
     function format(cell) {
         if (!cell) return ""
@@ -51,12 +106,14 @@ QtObject {
             add("RSRP", p.ssRsrp !== undefined ? -p.ssRsrp + " dBm" : undefined)
             add("RSRQ", p.ssRsrq !== undefined ? -p.ssRsrq + " dB" : undefined)
             add("SINR", p.ssSinr !== undefined ? p.ssSinr + " dB" : undefined)
-            add("ARFCN", p.nrarfcn)
+            add("ARFCN", p.nrarfcn !== undefined
+                ? p.nrarfcn + " (" + nrMhz(p.nrarfcn).toFixed(1) + " MHz, " + band(cell) + ")"
+                : undefined)
         } else if (cell.type === "lte") {
             add("RSRP", p.rsrp !== undefined ? -p.rsrp + " dBm" : undefined)
             add("RSRQ", p.rsrq !== undefined ? -p.rsrq + " dB" : undefined)
             add("SNR", p.rssnr !== undefined ? (p.rssnr / 10).toFixed(1) + " dB" : undefined)
-            add("EARFCN", p.earfcn)
+            add("EARFCN", p.earfcn !== undefined ? p.earfcn + " (" + band(cell) + ")" : undefined)
         } else {
             add("level", p.signalStrength)
         }

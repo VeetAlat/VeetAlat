@@ -72,6 +72,27 @@ preference (`nr` if it was anything odd). Side effect while it's on: the
 stock Settings app shows "4G" as the preferred mode, because as far as ofono
 knows, it is.
 
+## Bands (n77, n78, …)
+
+The app shows each visible cell's frequency and band, decoded from its
+channel number (NR-ARFCN / EARFCN), plus a "Bands seen" summary.
+
+It can't add bands to the modem. Band support comes from the radio hardware
+and the band table in the modem firmware. Android's band-selection call
+(`setSystemSelectionChannels`) can only narrow scanning to bands the modem
+already has, and ofono doesn't use it. A separate process can't call it
+either: the radio service allows one client, and that client is ofono.
+Doing it properly would need an ofono plugin.
+
+n78 (3.3–3.8 GHz) lies inside n77 (3.3–4.2 GHz):
+
+- **n77 cells in 3.3–3.8 GHz** (shown as `n77/n78`) can usually be used by
+  an n78 phone if the cell also announces n78 (multi-frequency band
+  indicator, MFBI, in SIB1). That's a network setting.
+- **n77 cells in 3.8–4.2 GHz** (shown as `n77 only`) need a modem with real
+  n77 support. If the app ever lists such a cell, the modem can at least
+  measure that frequency.
+
 ## Architecture
 
 Only the helper runs as root, and it only accepts four exact words.
@@ -156,11 +177,11 @@ Needs Developer mode (Settings → Developer tools). Copy the RPM to the phone,
 then in Terminal:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/nr-mode-0.4.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/nr-mode-0.5.0-1.aarch64.rpm
 ```
 
 If `pkcon` refuses the unsigned package, use
-`devel-su rpm -i ~/Downloads/nr-mode-0.4.0-1.aarch64.rpm` instead.
+`devel-su rpm -i ~/Downloads/nr-mode-0.5.0-1.aarch64.rpm` instead.
 
 ## Tests
 

@@ -89,14 +89,20 @@ Page {
                 label: "Revert without 5G SA"
                 description: "Go back to normal mode if the phone hasn't registered to a network by then."
                 enabled: !nrControl.busy
-                currentIndex: Math.max(0, page.revertChoices.indexOf(revertAfter.value))
+                // Set once rather than bound: binding currentIndex to the
+                // value this ComboBox itself writes is a binding loop.
+                property bool ready
+                Component.onCompleted: {
+                    currentIndex = Math.max(0, page.revertChoices.indexOf(revertAfter.value))
+                    ready = true
+                }
                 menu: ContextMenu {
                     MenuItem { text: "After 1 minute" }
                     MenuItem { text: "After 3 minutes" }
                     MenuItem { text: "After 5 minutes" }
                     MenuItem { text: "Never" }
                 }
-                onCurrentIndexChanged: revertAfter.value = page.revertChoices[currentIndex]
+                onCurrentIndexChanged: if (ready) revertAfter.value = page.revertChoices[currentIndex]
             }
 
             Label {
@@ -154,6 +160,20 @@ Page {
             DetailItem {
                 label: "Cells visible"
                 value: network.cells.length + " (" + network.nrCellCount + " 5G NR)"
+            }
+            DetailItem {
+                label: "Bands seen"
+                value: network.bandSummary || "–"
+            }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                visible: network.n77OnlySeen
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                text: "A cell above 3.8 GHz (n77 only) is visible, so this modem can at "
+                      + "least receive n77 frequencies there."
             }
             Label {
                 x: Theme.horizontalPageMargin
