@@ -84,12 +84,22 @@ function scalePosition(value) {
     return Math.max(0, Math.min(1, p))
 }
 
+// Formatters never show "NaN": missing or invalid values become a dash.
+var MISSING = "\u2013"
+
+function formatBmi(value) {
+    if (!isFinite(value)) return MISSING
+    return rounded(value).toFixed(1)
+}
+
 function formatWeight(kg, unit) {
+    if (!isFinite(kg) || kg <= 0) return MISSING
     if (unit === "lb") return lbFromKg(kg).toFixed(1) + " lb"
     return kg.toFixed(1) + " kg"
 }
 
 function formatHeight(cm, unit) {
+    if (!isFinite(cm) || cm <= 0) return MISSING
     if (unit === "ftin") {
         var f = ftInFromCm(cm)
         return f.ft + "′ " + f.inch + "″"
@@ -98,6 +108,7 @@ function formatHeight(cm, unit) {
 }
 
 function formatRange(range, unit) {
+    if (!range || !isFinite(range.min) || !(range.min > 0)) return MISSING
     if (unit === "lb") {
         return lbFromKg(range.min).toFixed(0) + "–" + lbFromKg(range.max).toFixed(0) + " lb"
     }

@@ -8,59 +8,93 @@ Dialog {
 
     property Store store
     property date selectedDate: new Date()
+    property string unit: store ? store.weightUnit : "kg"
+    property alias weightText: weightField.text
 
-    readonly property bool pounds: store.weightUnit === "lb"
-    readonly property real entered: Bmi.parseNumber(weightField.text)
+    readonly property bool pounds: unit === "lb"
+    readonly property real entered: Bmi.parseNumber(weightText)
     readonly property real weightKg: pounds ? Bmi.kgFromLb(entered) : entered
     readonly property bool valid: weightKg >= 20 && weightKg <= 400
-    readonly property real previewBmi: valid ? Bmi.bmi(weightKg, store.heightCm) : NaN
+    readonly property real previewBmi: valid && store ? Bmi.bmi(weightKg, store.heightCm) : NaN
 
     canAccept: valid
 
     onAccepted: store.addEntry(store.isoDate(selectedDate), weightKg)
 
-    Column {
-        width: parent.width
+    SilicaFlickable {
+        anchors.fill: parent
+        contentHeight: column.height + Theme.paddingLarge
 
-        DialogHeader {
-            title: "Add weight"
-            acceptText: "Save"
-        }
-
-        TextField {
-            id: weightField
+        Column {
+            id: column
             width: parent.width
-            focus: true
-            label: dialog.pounds ? "Weight (lb)" : "Weight (kg)"
-            placeholderText: label
-            inputMethodHints: Qt.ImhFormattedNumbersOnly
-            EnterKey.iconSource: "image://theme/icon-m-enter-accept"
-            EnterKey.enabled: dialog.canAccept
-            EnterKey.onClicked: dialog.accept()
-        }
+            spacing: Theme.paddingMedium
 
-        ValueButton {
-            label: "Date"
-            value: Qt.formatDate(dialog.selectedDate, Qt.DefaultLocaleLongDate)
-            onClicked: {
-                var picker = pageStack.push("Sailfish.Silica.DatePickerDialog",
-                                            { date: dialog.selectedDate })
-                picker.accepted.connect(function() { dialog.selectedDate = picker.date })
+            DialogHeader {
+                title: "Add weight"
+                acceptText: "Save"
             }
-        }
 
-        Item { width: 1; height: Theme.paddingLarge }
+            Instruction {
+                text: "Type what your scale shows and tap Save. Change the date if "
+                      + "you weighed yourself on another day."
+            }
 
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: dialog.valid
-            font.pixelSize: Theme.fontSizeExtraLarge
-            color: Theme.highlightColor
-            text: "BMI " + Bmi.rounded(dialog.previewBmi).toFixed(1)
-        }
-        CategoryLabel {
-            anchors.horizontalCenter: parent.horizontalCenter
-            category: dialog.valid ? Bmi.category(dialog.previewBmi) : null
+            ChoiceButtons {
+                options: [{ value: "kg", text: "kg" }, { value: "lb", text: "lb" }]
+                value: dialog.unit
+                onPicked: {
+                    // Convert a typed weight when switching units.
+                    var kg = dialog.weightKg
+                    dialog.unit = newValue
+                    if (kg > 0) {
+                        dialog.weightText = (newValue === "lb" ? Bmi.lbFromKg(kg) : kg).toFixed(1)
+                    }
+                }
+            }
+
+            TextField {
+                id: weightField
+                width: parent.width
+                focus: true
+                label: dialog.pounds ? "Weight in pounds, e.g. 165.5" : "Weight in kilograms, e.g. 72.5"
+                placeholderText: dialog.pounds ? "Weight in lb" : "Weight in kg"
+                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                EnterKey.iconSource: "image://theme/icon-m-enter-accept"
+                EnterKey.enabled: dialog.canAccept
+                EnterKey.onClicked: dialog.accept()
+            }
+
+            ValueButton {
+                label: "Date"
+                value: Qt.formatDate(dialog.selectedDate, Qt.DefaultLocaleLongDate)
+                description: "Tap to change"
+                onClicked: {
+                    var picker = pageStack.push("Sailfish.Silica.DatePickerDialog",
+                                                { date: dialog.selectedDate })
+                    picker.accepted.connect(function() { dialog.selectedDate = picker.date })
+                }
+            }
+
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: dialog.valid
+                font.pixelSize: Theme.fontSizeExtraLarge
+                color: Theme.highlightColor
+                text: "BMI " + Bmi.formatBmi(dialog.previewBmi)
+            }
+            CategoryLabel {
+                anchors.horizontalCenter: parent.horizontalCenter
+                category: dialog.valid ? Bmi.category(dialog.previewBmi) : null
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                preferredWidth: Theme.buttonWidthLarge
+                enabled: dialog.canAccept
+                text: "Save"
+                onClicked: dialog.accept()
+            }
         }
     }
 }

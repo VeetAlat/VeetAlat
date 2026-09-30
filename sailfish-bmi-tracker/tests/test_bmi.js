@@ -69,6 +69,11 @@ check("weight text lb", B.formatWeight(B.kgFromLb(160), "lb") === "160.0 lb")
 check("height text cm", B.formatHeight(175.4, "cm") === "175 cm")
 check("height text ft/in", B.formatHeight(175.26, "ftin") === "5′ 9″")
 
+check("no NaN: weight", B.formatWeight(NaN, "kg") === "\u2013" && B.formatWeight(undefined, "lb") === "\u2013")
+check("no NaN: height", B.formatHeight(0, "cm") === "\u2013" && B.formatHeight(NaN, "ftin") === "\u2013")
+check("no NaN: range", B.formatRange(B.healthyRange(0), "kg") === "\u2013" && B.formatRange(null, "kg") === "\u2013")
+check("no NaN: bmi", B.formatBmi(NaN) === "\u2013" && B.formatBmi(22.857) === "22.9")
+
 // Sailfish's Qt 5.6 JS engine is ES5: make sure no newer syntax slipped in.
 check("ES5 only (no let/const/arrow/template)",
     !/\b(let|const)\s|=>|`/.test(src))

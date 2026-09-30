@@ -1,50 +1,62 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import "../components"
 import "../js/bmi.js" as Bmi
 
+// Profile and units, as three numbered steps with tap-to-choose buttons.
+// Save with the button at the bottom (or "Save" at the top).
 Dialog {
     id: dialog
 
     property Store store
 
-    readonly property bool metricHeight: heightUnitBox.currentIndex === 0
+    // Current choices; filled from the store when the page opens.
+    property string gender: ""
+    property string heightUnit: "cm"
+    property string weightUnit: "kg"
+    property alias ageText: ageField.text
+    property alias cmText: cmField.text
+    property alias ftText: ftField.text
+    property alias inText: inField.text
+
+    readonly property bool metricHeight: heightUnit === "cm"
     readonly property real heightCm: {
-        if (metricHeight) return Bmi.parseNumber(cmField.text)
-        var ft = Bmi.parseNumber(ftField.text)
-        var inch = inField.text.trim() === "" ? 0 : Bmi.parseNumber(inField.text)
+        if (metricHeight) return Bmi.parseNumber(cmText)
+        var ft = Bmi.parseNumber(ftText)
+        var inch = inText.trim() === "" ? 0 : Bmi.parseNumber(inText)
         return Bmi.cmFromFtIn(ft, inch)
     }
     readonly property bool heightValid: heightCm >= 50 && heightCm <= 272
-    readonly property int age: parseInt(ageField.text, 10) || 0
-    readonly property bool ageValid: ageField.text === "" || (age >= 2 && age <= 120)
-
-    readonly property var genders: ["", "female", "male", "other"]
+    readonly property int age: parseInt(ageText, 10) || 0
+    readonly property bool ageValid: ageText === "" || (age >= 2 && age <= 120)
 
     canAccept: heightValid && ageValid
 
-    // Show a height in both unit systems' fields.
+    // Put a height into both the cm and the feet/inches fields.
     function fillHeight(cm) {
         if (!(cm > 0)) return
-        cmField.text = String(Math.round(cm))
+        cmText = String(Math.round(cm))
         var f = Bmi.ftInFromCm(cm)
-        ftField.text = String(f.ft)
-        inField.text = String(f.inch)
+        ftText = String(f.ft)
+        inText = String(f.inch)
     }
 
-    Component.onCompleted: {
-        genderBox.currentIndex = Math.max(0, genders.indexOf(store.gender))
-        ageField.text = store.age > 0 ? String(store.age) : ""
-        weightUnitBox.currentIndex = store.weightUnit === "lb" ? 1 : 0
-        heightUnitBox.currentIndex = store.heightUnit === "ftin" ? 1 : 0
+    function loadFromStore() {
+        gender = store.gender
+        heightUnit = store.heightUnit
+        weightUnit = store.weightUnit
+        ageText = store.age > 0 ? String(store.age) : ""
         fillHeight(store.heightCm)
     }
 
+    Component.onCompleted: loadFromStore()
+
     onAccepted: store.saveProfile({
-        gender: genders[genderBox.currentIndex],
+        gender: gender,
         age: age,
         heightCm: Math.round(heightCm * 10) / 10,
-        weightUnit: weightUnitBox.currentIndex === 1 ? "lb" : "kg",
-        heightUnit: metricHeight ? "cm" : "ftin"
+        weightUnit: weightUnit,
+        heightUnit: heightUnit
     })
 
     SilicaFlickable {
@@ -56,44 +68,60 @@ Dialog {
         Column {
             id: column
             width: parent.width
+            spacing: Theme.paddingMedium
 
             DialogHeader {
-                title: "Profile and units"
+                title: "Your profile"
                 acceptText: "Save"
             }
 
-            SectionHeader { text: "About you" }
+            Instruction {
+                text: "Your height is needed to work out your BMI. Age and gender "
+                      + "are optional. Fill in the three steps and tap Save."
+            }
 
-            ComboBox {
-                id: genderBox
-                label: "Gender"
-                menu: ContextMenu {
-                    MenuItem { text: "Not set" }
-                    MenuItem { text: "Female" }
-                    MenuItem { text: "Male" }
-                    MenuItem { text: "Other" }
-                }
+            // Step 1
+            SectionHeader { text: "1 · About you" }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                color: Theme.highlightColor
+                text: "Gender (optional)"
+            }
+            ChoiceButtons {
+                options: [{ value: "female", text: "Female" },
+                          { value: "male", text: "Male" },
+                          { value: "other", text: "Other" }]
+                value: dialog.gender
+                // Tapping the chosen one again clears it.
+                onPicked: dialog.gender = (dialog.gender === newValue ? "" : newValue)
             }
 
             TextField {
                 id: ageField
                 width: parent.width
-                label: dialog.ageValid ? "Age (years)" : "Age must be 2–120"
-                placeholderText: "Age (years)"
+                label: dialog.ageValid ? "Age in years (optional)" : "Age must be between 2 and 120"
+                placeholderText: "Age in years (optional)"
                 inputMethodHints: Qt.ImhDigitsOnly
                 validator: IntValidator { bottom: 0; top: 150 }
                 EnterKey.iconSource: "image://theme/icon-m-enter-next"
-                EnterKey.onClicked: (dialog.metricHeight ? cmField : ftField).focus = true
+                EnterKey.onClicked: (dialog.metricHeight ? cmField : ftField).forceActiveFocus()
             }
 
-            SectionHeader { text: "Height" }
+            // Step 2
+            SectionHeader { text: "2 · Your height" }
 
-            ComboBox {
-                id: heightUnitBox
-                label: "Height in"
-                menu: ContextMenu {
-                    MenuItem { text: "Centimetres" }
-                    MenuItem { text: "Feet and inches" }
+            Instruction { text: "Choose how you want to enter it:" }
+
+            ChoiceButtons {
+                options: [{ value: "cm", text: "Centimetres" },
+                          { value: "ftin", text: "Feet + inches" }]
+                value: dialog.heightUnit
+                onPicked: {
+                    // Keep a typed height when switching.
+                    var cm = dialog.heightCm
+                    dialog.heightUnit = newValue
+                    if (cm >= 50 && cm <= 272) dialog.fillHeight(cm)
                 }
             }
 
@@ -101,21 +129,11 @@ Dialog {
                 id: cmField
                 visible: dialog.metricHeight
                 width: parent.width
-                label: "Height (cm)"
-                placeholderText: "Height (cm)"
+                label: "Height in centimetres, e.g. 175"
+                placeholderText: "Height in cm"
                 inputMethodHints: Qt.ImhFormattedNumbersOnly
-                // Keep feet/inches in step, so switching units shows the same height.
-                onTextChanged: if (activeFocus) {
-                    var cm = Bmi.parseNumber(text)
-                    if (cm > 0) {
-                        var f = Bmi.ftInFromCm(cm)
-                        ftField.text = String(f.ft)
-                        inField.text = String(f.inch)
-                    }
-                }
-                EnterKey.iconSource: "image://theme/icon-m-enter-accept"
-                EnterKey.enabled: dialog.canAccept
-                EnterKey.onClicked: dialog.accept()
+                EnterKey.iconSource: "image://theme/icon-m-enter-close"
+                EnterKey.onClicked: focus = false
             }
 
             Row {
@@ -124,35 +142,36 @@ Dialog {
                 TextField {
                     id: ftField
                     width: parent.width / 2
-                    label: "Feet"
+                    label: "Feet, e.g. 5"
                     placeholderText: "Feet"
                     inputMethodHints: Qt.ImhDigitsOnly
-                    onTextChanged: if (activeFocus && dialog.heightValid) cmField.text = String(Math.round(dialog.heightCm))
                     EnterKey.iconSource: "image://theme/icon-m-enter-next"
-                    EnterKey.onClicked: inField.focus = true
+                    EnterKey.onClicked: inField.forceActiveFocus()
                 }
                 TextField {
                     id: inField
                     width: parent.width / 2
-                    label: "Inches"
+                    label: "Inches, e.g. 9"
                     placeholderText: "Inches"
                     inputMethodHints: Qt.ImhFormattedNumbersOnly
-                    onTextChanged: if (activeFocus && dialog.heightValid) cmField.text = String(Math.round(dialog.heightCm))
-                    EnterKey.iconSource: "image://theme/icon-m-enter-accept"
-                    EnterKey.enabled: dialog.canAccept
-                    EnterKey.onClicked: dialog.accept()
+                    EnterKey.iconSource: "image://theme/icon-m-enter-close"
+                    EnterKey.onClicked: focus = false
                 }
             }
 
-            SectionHeader { text: "Weight" }
+            // Step 3
+            SectionHeader { text: "3 · Weigh yourself in" }
 
-            ComboBox {
-                id: weightUnitBox
-                label: "Weight in"
-                menu: ContextMenu {
-                    MenuItem { text: "Kilograms (kg)" }
-                    MenuItem { text: "Pounds (lb)" }
-                }
+            ChoiceButtons {
+                options: [{ value: "kg", text: "Kilograms" },
+                          { value: "lb", text: "Pounds" }]
+                value: dialog.weightUnit
+                onPicked: dialog.weightUnit = newValue
+            }
+
+            Instruction {
+                text: "You can switch units any time. Your weights are kept in "
+                      + "kilograms, so switching never changes your history."
             }
 
             Item { width: 1; height: Theme.paddingLarge }
@@ -160,13 +179,26 @@ Dialog {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
+                visible: !dialog.canAccept
                 wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryHighlightColor
-                text: "Adult BMI categories are the same for every gender. Your age "
-                      + "decides whether they apply: under 20, BMI is judged against "
-                      + "growth charts instead. Weights are stored in kilograms, so "
-                      + "switching units never changes your history."
+                horizontalAlignment: Text.AlignHCenter
+                color: Theme.errorColor
+                text: !dialog.heightValid ? "Enter your height in step 2 to save."
+                                          : "Check your age in step 1."
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                preferredWidth: Theme.buttonWidthLarge
+                enabled: dialog.canAccept
+                text: "Save"
+                onClicked: dialog.accept()
+            }
+
+            Instruction {
+                text: "Adult BMI categories are the same for every gender. If you're "
+                      + "under 20, BMI is judged against growth charts instead, and the "
+                      + "app will remind you of that."
             }
         }
     }

@@ -10,6 +10,9 @@ DISTFILES += \
     qml/components/BmiChart.qml \
     qml/components/BmiScale.qml \
     qml/components/CategoryLabel.qml \
+    qml/components/ChoiceButtons.qml \
+    qml/components/Instruction.qml \
+    qml/components/Step.qml \
     qml/cover/CoverPage.qml \
     qml/js/bmi.js \
     qml/js/storage.js \

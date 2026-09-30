@@ -3,6 +3,10 @@ import Sailfish.Silica 1.0
 import "../components"
 import "../js/bmi.js" as Bmi
 
+// Three states, each with instructions and a button for the next step:
+//   1. no profile yet   -> how it works + "Set up profile"
+//   2. no weights yet   -> "Add your first weight"
+//   3. data             -> BMI, scale, chart, measurements
 Page {
     id: page
 
@@ -10,13 +14,21 @@ Page {
 
     allowedOrientations: Orientation.All
 
-    readonly property bool ready: store.hasProfile && store.entries.length > 0
+    readonly property bool hasProfile: store !== null && store.hasProfile
+    readonly property bool hasData: hasProfile && store.entries.length > 0
+
+    function openProfile() {
+        pageStack.push(Qt.resolvedUrl("ProfileDialog.qml"), { store: page.store })
+    }
+    function openAddWeight() {
+        pageStack.push(Qt.resolvedUrl("AddEntryDialog.qml"), { store: page.store })
+    }
 
     function genderName(g) {
         switch (g) {
-        case "female": return "Female"
-        case "male": return "Male"
-        case "other": return "Other"
+        case "female": return "female"
+        case "male": return "male"
+        case "other": return "other"
         default: return ""
         }
     }
@@ -27,22 +39,14 @@ Page {
 
         PullDownMenu {
             MenuItem {
-                text: "Profile and units"
-                onClicked: pageStack.push(Qt.resolvedUrl("ProfileDialog.qml"), { store: page.store })
+                text: "Edit profile"
+                onClicked: page.openProfile()
             }
             MenuItem {
                 text: "Add weight"
-                enabled: page.store.hasProfile
-                onClicked: pageStack.push(Qt.resolvedUrl("AddEntryDialog.qml"), { store: page.store })
+                enabled: page.hasProfile
+                onClicked: page.openAddWeight()
             }
-        }
-
-        ViewPlaceholder {
-            enabled: !page.ready
-            text: page.store.hasProfile ? "No weights yet" : "Welcome to BMI Tracker"
-            hintText: page.store.hasProfile
-                      ? "Pull down to add your weight"
-                      : "Pull down to enter your height, age and gender"
         }
 
         VerticalScrollDecorator { }
@@ -50,118 +54,221 @@ Page {
         Column {
             id: column
             width: parent.width
-            visible: page.ready
+            spacing: Theme.paddingMedium
 
             PageHeader { title: "BMI Tracker" }
 
-            // Headline: the latest BMI and its category.
-            Label {
-                anchors.horizontalCenter: parent.horizontalCenter
-                font.pixelSize: Theme.fontSizeHuge * 1.4
-                color: Theme.highlightColor
-                text: isNaN(page.store.currentBmi) ? "–" : Bmi.rounded(page.store.currentBmi).toFixed(1)
-            }
-            CategoryLabel {
-                anchors.horizontalCenter: parent.horizontalCenter
-                category: page.store.currentCategory
-                font.pixelSize: Theme.fontSizeLarge
-            }
-
-            Item { width: 1; height: Theme.paddingLarge }
-
-            BmiScale {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * x
-                value: page.store.currentBmi
-            }
-
-            Item { width: 1; height: Theme.paddingMedium; visible: !Bmi.isAdult(page.store.age) }
-
+            // Never fail silently.
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
-                visible: !Bmi.isAdult(page.store.age)
+                visible: page.store !== null && page.store.lastError !== ""
                 wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryHighlightColor
-                text: "Under 20, BMI is judged against age- and sex-specific growth "
-                      + "charts, so these adult categories are only a rough guide."
+                color: Theme.errorColor
+                text: page.store ? page.store.lastError : ""
             }
 
-            Item { width: 1; height: Theme.paddingMedium }
+            // ---- 1. First run --------------------------------------------
+            Column {
+                width: parent.width
+                spacing: Theme.paddingMedium
+                visible: !page.hasProfile
 
-            DetailItem {
-                label: "Weight"
-                value: page.store.latest ? Bmi.formatWeight(page.store.latest.weightKg, page.store.weightUnit) : ""
-            }
-            DetailItem {
-                label: "Height"
-                value: Bmi.formatHeight(page.store.heightCm, page.store.heightUnit)
-            }
-            DetailItem {
-                label: "Normal weight for you"
-                value: Bmi.formatRange(Bmi.healthyRange(page.store.heightCm), page.store.weightUnit)
-            }
-            DetailItem {
-                visible: page.store.age > 0 || page.store.gender !== ""
-                label: "Profile"
-                value: [page.store.age > 0 ? page.store.age + " years" : "",
-                        page.genderName(page.store.gender)].filter(function(s) { return s }).join(", ")
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * x
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeLarge
+                    color: Theme.highlightColor
+                    text: "Welcome!"
+                }
+                Instruction {
+                    text: "BMI (body mass index) compares your weight with your height. "
+                          + "This app works it out and keeps a history for you."
+                }
+                SectionHeader { text: "How it works" }
+                Step {
+                    number: 1
+                    title: "Set up your profile"
+                    explanation: "Your height, plus your age and gender if you like."
+                }
+                Step {
+                    number: 2
+                    title: "Add your weight"
+                    explanation: "Whenever you weigh yourself, in kilograms or pounds."
+                }
+                Step {
+                    number: 3
+                    title: "Follow your BMI"
+                    explanation: "On a colour scale and a chart that grows with every weight."
+                }
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    preferredWidth: Theme.buttonWidthLarge
+                    text: "Set up profile"
+                    onClicked: page.openProfile()
+                }
             }
 
-            SectionHeader { text: "History" }
+            // ---- 2. Profile, no weights yet ----------------------------------
+            Column {
+                width: parent.width
+                spacing: Theme.paddingMedium
+                visible: page.hasProfile && !page.hasData
 
-            BmiChart {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * x
-                entries: page.store.entries
-                weightUnit: page.store.weightUnit
+                Instruction {
+                    text: "Your profile is saved (height "
+                          + Bmi.formatHeight(page.store ? page.store.heightCm : 0,
+                                             page.store ? page.store.heightUnit : "cm")
+                          + "). Now add your weight to see your BMI."
+                }
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    preferredWidth: Theme.buttonWidthLarge
+                    text: "Add your first weight"
+                    onClicked: page.openAddWeight()
+                }
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    preferredWidth: Theme.buttonWidthLarge
+                    text: "Edit profile"
+                    onClicked: page.openProfile()
+                }
             }
 
-            SectionHeader { text: "Measurements" }
+            // ---- 3. Data ----------------------------------------------------
+            Column {
+                width: parent.width
+                spacing: Theme.paddingMedium
+                visible: page.hasData
 
-            // Newest first. Long-press to delete.
-            Repeater {
-                model: page.store.entries.slice().reverse()
-                delegate: ListItem {
-                    id: item
-                    contentHeight: Theme.itemSizeSmall
-                    menu: ContextMenu {
-                        MenuItem {
-                            text: "Delete"
-                            onClicked: item.remorseDelete(function() {
-                                page.store.removeEntry(modelData.id)
-                            })
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    font.pixelSize: Theme.fontSizeHuge * 1.4
+                    color: Theme.highlightColor
+                    text: Bmi.formatBmi(page.store ? page.store.currentBmi : NaN)
+                }
+                CategoryLabel {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    category: page.store ? page.store.currentCategory : null
+                    font.pixelSize: Theme.fontSizeLarge
+                }
+
+                BmiScale {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * x
+                    value: page.store ? page.store.currentBmi : NaN
+                }
+
+                Instruction {
+                    text: "Blue is underweight, green normal, yellow overweight and red obese. "
+                          + "The white marker shows your latest BMI."
+                }
+                Instruction {
+                    visible: page.store !== null && !Bmi.isAdult(page.store.age)
+                    color: Theme.highlightColor
+                    text: "You're under 20: BMI is judged against age- and sex-specific "
+                          + "growth charts, so these adult colours are only a rough guide."
+                }
+
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.paddingLarge
+                    Button {
+                        text: "Add weight"
+                        onClicked: page.openAddWeight()
+                    }
+                    Button {
+                        text: "Edit profile"
+                        onClicked: page.openProfile()
+                    }
+                }
+
+                Column {
+                    width: parent.width
+                    DetailItem {
+                        label: "Latest weight"
+                        value: page.store && page.store.latest
+                               ? Bmi.formatWeight(page.store.latest.weightKg, page.store.weightUnit)
+                               : Bmi.MISSING
+                    }
+                    DetailItem {
+                        label: "Height"
+                        value: page.store ? Bmi.formatHeight(page.store.heightCm, page.store.heightUnit) : Bmi.MISSING
+                    }
+                    DetailItem {
+                        label: "Normal weight for you"
+                        value: page.store ? Bmi.formatRange(Bmi.healthyRange(page.store.heightCm),
+                                                             page.store.weightUnit)
+                                          : Bmi.MISSING
+                    }
+                    DetailItem {
+                        visible: page.store !== null && (page.store.age > 0 || page.store.gender !== "")
+                        label: "Profile"
+                        value: page.store
+                               ? [page.store.age > 0 ? page.store.age + " years" : "",
+                                  page.genderName(page.store.gender)]
+                                 .filter(function(s) { return s }).join(", ")
+                               : ""
+                    }
+                }
+
+                SectionHeader { text: "History" }
+
+                BmiChart {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * x
+                    entries: page.store ? page.store.entries : []
+                    weightUnit: page.store ? page.store.weightUnit : "kg"
+                }
+                Instruction { text: "Tap or drag across the chart to see a measurement." }
+
+                SectionHeader { text: "Measurements" }
+                Instruction { text: "Press and hold a measurement to delete it." }
+
+                // Newest first.
+                Repeater {
+                    model: page.store ? page.store.entries.slice().reverse() : []
+                    delegate: ListItem {
+                        id: item
+                        contentHeight: Theme.itemSizeSmall
+                        menu: ContextMenu {
+                            MenuItem {
+                                text: "Delete"
+                                onClicked: item.remorseDelete(function() {
+                                    page.store.removeEntry(modelData.id)
+                                })
+                            }
                         }
-                    }
 
-                    Label {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.horizontalPageMargin
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Qt.formatDate(page.store.parseIsoDate(modelData.date), Qt.DefaultLocaleShortDate)
-                    }
-                    Label {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.secondaryColor
-                        text: Bmi.formatWeight(modelData.weightKg, page.store.weightUnit)
-                    }
-                    Row {
-                        anchors.right: parent.right
-                        anchors.rightMargin: Theme.horizontalPageMargin
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.paddingSmall
                         Label {
+                            anchors.left: parent.left
+                            anchors.leftMargin: Theme.horizontalPageMargin
                             anchors.verticalCenter: parent.verticalCenter
-                            text: Bmi.rounded(modelData.bmi).toFixed(1)
+                            text: Qt.formatDate(page.store.parseIsoDate(modelData.date), Qt.DefaultLocaleShortDate)
                         }
-                        Rectangle {
+                        Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
                             anchors.verticalCenter: parent.verticalCenter
-                            width: Theme.paddingMedium * 1.5
-                            height: width
-                            radius: width / 2
-                            color: Bmi.category(modelData.bmi).color
+                            color: Theme.secondaryColor
+                            text: Bmi.formatWeight(modelData.weightKg, page.store.weightUnit)
+                        }
+                        Row {
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.horizontalPageMargin
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Theme.paddingSmall
+                            Label {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Bmi.formatBmi(modelData.bmi)
+                            }
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Theme.paddingMedium * 1.5
+                                height: width
+                                radius: width / 2
+                                color: Bmi.category(modelData.bmi) ? Bmi.category(modelData.bmi).color : "transparent"
+                            }
                         }
                     }
                 }

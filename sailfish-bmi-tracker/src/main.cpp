@@ -1,3 +1,4 @@
+#include <QDir>
 #include <QGuiApplication>
 #include <QQmlEngine>
 #include <QQuickView>
@@ -16,9 +17,11 @@ int main(int argc, char *argv[])
 
     QScopedPointer<QQuickView> view(SailfishApp::createView());
     // The LocalStorage database lives in the app's own data directory.
-    view->engine()->setOfflineStoragePath(
-        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-        + QStringLiteral("/QML/OfflineStorage"));
+    // Create it up front rather than rely on anything else doing so.
+    const QString storage = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+            + QStringLiteral("/QML/OfflineStorage");
+    QDir().mkpath(storage);
+    view->engine()->setOfflineStoragePath(storage);
     view->setSource(SailfishApp::pathToMainQml());
     view->show();
 

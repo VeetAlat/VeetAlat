@@ -3,7 +3,8 @@ import "../js/storage.js" as Storage
 import "../js/bmi.js" as Bmi
 
 // The app's data, loaded from and saved straight to the database, shared
-// by every page and the cover.
+// by every page and the cover. There is exactly one, created in the main
+// QML file as "appStore" and handed to each page.
 QtObject {
     id: store
 
@@ -17,19 +18,38 @@ QtObject {
     // [{ id, date: "yyyy-mm-dd", weightKg, bmi }], oldest first
     property var entries: []
 
+    // Set when reading or writing the database fails, shown on the main
+    // page so a problem is never silent. Empty when all is well.
+    property string lastError: ""
+
+    // True once the saved data has been read.
+    property bool loaded: false
+
     readonly property bool hasProfile: heightCm > 0
     readonly property var latest: entries.length > 0 ? entries[entries.length - 1] : null
     readonly property real currentBmi: latest ? latest.bmi : NaN
     readonly property var currentCategory: Bmi.category(currentBmi)
 
+    function fail(what, e) {
+        lastError = what + ": " + (e && e.message ? e.message : e)
+        console.warn("BMI Tracker:", lastError)
+        return false
+    }
+
     function load() {
-        var p = Storage.profile()
-        gender = p.gender || ""
-        age = parseInt(p.age || "0", 10) || 0
-        heightCm = parseFloat(p.heightCm || "0") || 0
-        weightUnit = p.weightUnit === "lb" ? "lb" : "kg"
-        heightUnit = p.heightUnit === "ftin" ? "ftin" : "cm"
-        loadEntries()
+        try {
+            var p = Storage.profile()
+            gender = p.gender || ""
+            age = parseInt(p.age || "0", 10) || 0
+            heightCm = parseFloat(p.heightCm || "0") || 0
+            weightUnit = p.weightUnit === "lb" ? "lb" : "kg"
+            heightUnit = p.heightUnit === "ftin" ? "ftin" : "cm"
+            loadEntries()
+            loaded = true
+            return true
+        } catch (e) {
+            return fail("Could not read saved data", e)
+        }
     }
 
     function loadEntries() {
@@ -40,19 +60,36 @@ QtObject {
         entries = list
     }
 
+    // Returns true when saved.
     function saveProfile(values) {
-        Storage.setProfile(values)
-        load() // BMI of every entry depends on the height
+        try {
+            Storage.setProfile(values)
+        } catch (e) {
+            return fail("Could not save your profile", e)
+        }
+        lastError = ""
+        return load() // every entry's BMI depends on the height
     }
 
     function addEntry(date, weightKg) {
-        Storage.addEntry(date, weightKg)
-        loadEntries()
+        try {
+            Storage.addEntry(date, weightKg)
+            loadEntries()
+        } catch (e) {
+            return fail("Could not save the weight", e)
+        }
+        lastError = ""
+        return true
     }
 
     function removeEntry(id) {
-        Storage.removeEntry(id)
-        loadEntries()
+        try {
+            Storage.removeEntry(id)
+            loadEntries()
+        } catch (e) {
+            return fail("Could not delete the measurement", e)
+        }
+        return true
     }
 
     // "yyyy-mm-dd" for a Date, in local time.

@@ -3,7 +3,9 @@
 A native Silica app for logging your weight and following your body mass
 index over time.
 
-- Enter your **height** (cm or feet and inches), **age** and **gender** once.
+- A first-run guide explains the three steps, with a button for each.
+- Enter your **height** (cm or feet and inches), **age** and **gender** once,
+  using simple tap-to-choose buttons and step-by-step instructions.
 - Log your **weight** in kilograms or pounds, with a date.
 - See your BMI on a **blue / green / yellow / red** scale (underweight /
   normal / overweight / obese), your normal weight range for your height,
@@ -60,7 +62,7 @@ lands in `RPMS/`.
 With Developer mode on, copy the RPM to the phone and run:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.0.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.1.0-1.aarch64.rpm
 ```
 
 (or `devel-su rpm -U …` if pkcon refuses an unsigned package).
@@ -68,8 +70,20 @@ devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.0.0-1.aarch64.rpm
 ## Tests
 
 ```sh
-node tests/test_bmi.js     # BMI maths, unit conversion, categories, parsing
+node tests/test_bmi.js       # BMI maths, unit conversion, categories, parsing
+tests/sdk-smoke-test.sh      # end to end in the Sailfish SDK (Docker)
 ```
+
+The smoke test builds a copy of the app with `tests/SmokeTest.qml` added,
+runs it twice on Sailfish's own Qt and Silica, and checks the whole flow:
+the pages get the app's data, the profile and weights save, everything is
+still there after a restart, the profile page reopens filled in, and
+nothing shows "NaN". It fails on any QML warning.
+
+It exists because 1.0 lost everything: `MainPage { store: store }`
+resolved `store` to the page's own empty property instead of the app's
+data object, so pages saved into nothing. The data object is now called
+`appStore`, and the smoke test fails on the old code.
 
 `qml/js/bmi.js` is plain ES5 because Sailfish's Qt 5.6 JavaScript engine
 predates `let`, `const`, arrow functions and template strings; the test
