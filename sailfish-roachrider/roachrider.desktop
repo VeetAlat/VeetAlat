@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Roach Rider
+Comment=The roach needs to ride its way through the neon grid
+Icon=roachrider
+Exec=roachrider
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Sandboxed with no extra permissions: the game only writes its own data
+# directory, ~/.local/share/org.veetalat/roachrider.
+Permissions=
+OrganizationName=org.veetalat
+ApplicationName=roachrider
