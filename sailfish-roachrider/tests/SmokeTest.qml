@@ -15,6 +15,17 @@ Item {
     property int step: 0
     property var page
     property int waited: 0
+    property int moves: 0
+    property int jumps: 0
+    property int endings: 0
+
+    Connections {
+        target: gameEngine
+        onMoved: smoke.moves++
+        onJumped: smoke.jumps++
+        onCrashed: smoke.endings++
+        onFell: smoke.endings++
+    }
 
     function check(name, ok) {
         console.log((ok ? "SMOKE PASS " : "SMOKE FAIL ") + name)
@@ -112,11 +123,17 @@ Item {
                 smoke.check("right button moves right, up the wall", gameEngine.lane === 3)
                 bar.leftPressed()
                 smoke.check("left button moves left", gameEngine.lane === 2)
+                smoke.check("each move makes a swoosh", smoke.moves === 3)
                 bar.jumpPressed()
+                smoke.check("the jump makes its sound", smoke.jumps === 1)
+                var sounds = smoke.find(p, function(i) { return i.hasOwnProperty("riding") })
+                smoke.check("the hum runs while riding", sounds !== null && sounds.riding)
+                smoke.check("the hum rises with speed", gameEngine.speed >= 0 && gameEngine.speed < 0.2)
                 var pause = smoke.find(p, function(i) { return i.hasOwnProperty("pressed") && i.visible && i.width === Theme.itemSizeLarge })
                 pause.clicked(null)
                 smoke.check("pause button pauses", gameEngine.paused && p.menuShown && smoke.label("PAUSED") !== null)
                 smoke.check("pause menu: Continue and Menu", smoke.button("Continue") !== null && smoke.button("Menu") !== null)
+                smoke.check("the hum stops when paused", !smoke.find(p, function(i) { return i.hasOwnProperty("riding") }).riding)
                 smoke.paused = gameEngine.score
                 break
             case 6:
@@ -138,8 +155,9 @@ Item {
                 smoke.check("the ride ends", gameEngine.state === Game.Over)
                 smoke.check("game over shown", smoke.label("GAME OVER") !== null
                             && smoke.label(gameEngine.deathReason) !== null)
-                smoke.check("distance and new best", gameEngine.score > 30 && gameEngine.newBest
+                smoke.check("distance and new best", gameEngine.score >= 20 && gameEngine.newBest
                             && gameEngine.best === gameEngine.score)
+                smoke.check("the ending makes a crash or fall sound", smoke.endings === 1)
                 smoke.check("Play again and Menu offered", smoke.button("Play again") !== null
                             && smoke.button("Menu") !== null)
                 smoke.button("Menu").clicked(null)

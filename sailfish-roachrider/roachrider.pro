@@ -16,9 +16,11 @@ HEADERS += \
 DISTFILES += \
     qml/roachrider.qml \
     qml/components/ControlBar.qml \
+    qml/components/GameSounds.qml \
     qml/components/NeonButton.qml \
     qml/cover/CoverPage.qml \
     qml/images/*.png \
+    qml/sounds/*.wav \
     qml/js/about.js \
     qml/pages/AboutPage.qml \
     qml/pages/GamePage.qml \

@@ -7,8 +7,8 @@ Exec=roachrider
 X-Nemo-Application-Type=silica-qt5
 
 [X-Sailjail]
-# Sandboxed with no extra permissions: the game only writes its own data
-# directory, ~/.local/share/org.veetalat/roachrider.
-Permissions=
+# Sandboxed. Audio is the only permission, for the game's sounds; it only
+# writes its own data directory, ~/.local/share/org.veetalat/roachrider.
+Permissions=Audio
 OrganizationName=org.veetalat
 ApplicationName=roachrider

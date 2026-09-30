@@ -32,6 +32,11 @@ Page {
         game: gameEngine
     }
 
+    GameSounds {
+        riding: page.playing
+        speed: gameEngine.speed
+    }
+
     // A red flash when the ride ends.
     Rectangle {
         id: flash

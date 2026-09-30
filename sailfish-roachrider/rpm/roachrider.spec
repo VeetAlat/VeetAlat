@@ -1,12 +1,14 @@
 Name:       roachrider
 Summary:    The roach needs to ride its way through the neon grid
-Version:    0.3.0
+Version:    0.4.0
 Release:    1
 License:    MIT
-URL:        https://github.com/VeetAlat/VeetAlat
+URL:        https://github.com/VeetAlat/sailfish-neon-dash
 Source0:    %{name}-%{version}.tar.bz2
 
 Requires:   sailfishsilica-qt5 >= 0.10.9
+# QML SoundEffect, for the sounds.
+Requires:   qt5-qtdeclarative-import-multimedia
 # The first test build was called Neon Rider.
 Obsoletes:  neonrider <= 0.1.0
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
@@ -41,6 +43,11 @@ desktop-file-install --delete-original \
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Wed Sep 30 2026 Valatalo - 0.4.0-1
+- Sound: the bike hums like an electric car backing up, rising in pitch
+  as it speeds up; swooshes for lane changes and jumps; a crash for the
+  blocks and a fall into the void. The app now asks for Audio.
+
 * Wed Sep 30 2026 Valatalo - 0.3.0-1
 - Harder: about 40% more obstacles a second, a faster start, and the
   track gets tough sooner: two or three sides gone, double rows of

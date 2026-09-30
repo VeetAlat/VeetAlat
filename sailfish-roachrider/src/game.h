@@ -20,6 +20,8 @@ class Game : public QObject
     Q_PROPERTY(bool newBest READ newBest NOTIFY stateChanged)
     Q_PROPERTY(QString deathReason READ deathReason NOTIFY stateChanged)
     Q_PROPERTY(int lane READ lane NOTIFY frame)
+    // 0 at the starting speed, 1 at top speed.
+    Q_PROPERTY(qreal speed READ speed NOTIFY scoreChanged)
 
 public:
     enum State { Ready, Running, Over };
@@ -37,6 +39,7 @@ public:
     bool newBest() const { return m_newBest; }
     QString deathReason() const;
     int lane() const { return m_core.lane(); }
+    qreal speed() const;
 
     Q_INVOKABLE void start();
     Q_INVOKABLE void left();
@@ -59,6 +62,11 @@ signals:
     void bestChanged();
     // Something on screen moved: draw again.
     void frame();
+    // For the sounds.
+    void moved();
+    void jumped();
+    void crashed();
+    void fell();
 
 private:
     void tick();

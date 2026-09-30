@@ -258,6 +258,35 @@ private slots:
         QVERIFY(!game.paused());
     }
 
+    void soundSignals()
+    {
+        QTemporaryDir dir;
+        Game game(dir.filePath("settings.ini"));
+        QSignalSpy moved(&game, &Game::moved), jumped(&game, &Game::jumped);
+        QSignalSpy crashed(&game, &Game::crashed), fell(&game, &Game::fell);
+        game.right();
+        QCOMPARE(moved.count(), 0);          // not riding yet
+        game.start();
+        game.core().setTrack(track({ { 30, ".#.........." } }));
+        game.right();
+        game.left();
+        QCOMPARE(moved.count(), 2);
+        game.jump();
+        QCOMPARE(jumped.count(), 1);
+        while (!(game.core().vh < 0 && game.core().h < 0.5))
+            game.step(1.0 / 60);
+        game.jump();                         // just before landing: no sound yet
+        QCOMPARE(jumped.count(), 1);
+        for (int i = 0; i < 12 && game.core().vh < 0; ++i)
+            game.step(1.0 / 60);
+        QCOMPARE(jumped.count(), 2);         // it counts, and sounds, on landing
+        for (int i = 0; i < 600 && game.state() == Game::Running; ++i)
+            game.step(1.0 / 60);
+        QCOMPARE(crashed.count(), 1);
+        QCOMPARE(fell.count(), 0);
+        QCOMPARE(game.speed() >= 0 && game.speed() < 0.3, true);
+    }
+
     void scoreSignals()
     {
         QTemporaryDir dir;

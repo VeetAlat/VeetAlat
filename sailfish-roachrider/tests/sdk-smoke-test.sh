@@ -9,7 +9,8 @@
 # copy never shows its window. The pages, the game and its loop all run as
 # usual. tests/render-screens.sh covers the drawing, on the build machine.
 # Without a window, Silica's own cover window warns about a missing Config;
-# that warning is left out.
+# that warning is left out. There is no sound server either, so the sounds
+# only check that they would play, and PulseAudio complains once.
 
 set -eu
 

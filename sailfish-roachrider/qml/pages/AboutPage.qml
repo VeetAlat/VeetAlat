@@ -67,8 +67,8 @@ Page {
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryHighlightColor
                 text: "The game is non-profit: free, with no ads and nothing to buy. "
-                      + "It runs only on your device and never uses the internet: it "
-                      + "has no network permission at all. No account, no tracking, "
+                      + "It runs only on your device and never uses the internet: its "
+                      + "only permission is to play sound. No account, no tracking, "
                       + "no analytics. Only your best distance is saved, on your phone."
             }
 

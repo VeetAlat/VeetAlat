@@ -41,6 +41,20 @@ there's a pause button in the top right.
   buttons are pictures: drawing their glow live with QML's Canvas took
   seconds per press on a phone.
 
+## Sounds
+
+All synthesised by `tools/make-sounds.py` (plain Python, no samples):
+
+- **The hum:** a synth tone with an electric whine on top, pulsing twice a
+  second, like an electric car backing up. Two seamless loops, low and
+  high; the game blends from one to the other as the roach speeds up.
+- **Swoosh** when changing lanes, a longer rising one for **jumps**.
+- **Crash** into a block (a digital crunch, a thud and a metallic clang),
+  and a falling whistle into the void.
+
+They play with QML's `SoundEffect` (`qml/components/GameSounds.qml`); the
+app's only permission is Audio.
+
 ## The roach and the pictures
 
 The roach on its bike is a 3D model, `tools/roach.obj` (from Tinkercad).
@@ -53,6 +67,7 @@ the buttons.
 
 ```sh
 tools/make-images.sh        # remakes every picture; they're committed
+python3 tools/make-sounds.py  # remakes the sounds; they're committed too
 ```
 
 ## Tests
@@ -77,12 +92,13 @@ tests/sdk-smoke-test.sh     # the whole app in the Sailfish SDK (Docker)
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/ (armv7hl for 32-bit)
-devel-su pkcon install-local ~/Downloads/roachrider-0.3.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/roachrider-0.4.0-1.aarch64.rpm
 ```
 
 ## Privacy
 
-Runs only on the phone, with no network permission at all. Only the best
+Runs only on the phone, with no network permission at all: its only
+permission is Audio, for the sounds. Only the best
 distance is saved, in
 `~/.local/share/org.veetalat/roachrider/`.
 

@@ -72,29 +72,52 @@ void Game::quit()
     emit frame();
 }
 
+qreal Game::speed() const
+{
+    return (GameCore::speedAt(m_core.dist) - Tuning::StartSpeed) / (Tuning::MaxSpeed - Tuning::StartSpeed);
+}
+
 void Game::left()
 {
-    if (m_state == Running && !m_paused)
-        m_core.left();
+    if (m_state != Running || m_paused)
+        return;
+    const int before = m_core.target;
+    m_core.left();
+    if (m_core.target != before)
+        emit moved();
 }
 
 void Game::right()
 {
-    if (m_state == Running && !m_paused)
-        m_core.right();
+    if (m_state != Running || m_paused)
+        return;
+    const int before = m_core.target;
+    m_core.right();
+    if (m_core.target != before)
+        emit moved();
 }
 
 void Game::jump()
 {
-    if (m_state == Running && !m_paused)
-        m_core.jump();
+    if (m_state != Running || m_paused)
+        return;
+    const bool before = m_core.airborne;
+    m_core.jump();
+    if (m_core.airborne && !before)
+        emit jumped();
 }
 
 void Game::step(double dt)
 {
     if (m_state != Running || m_paused)
         return;
+    const double climbBefore = m_core.vh;
     m_core.step(dt);
+    // A jump pressed just before landing starts here, landing and taking
+    // off again in the same step. Gravity only ever slows the climb, so a
+    // faster climb means a new jump.
+    if (m_core.airborne && m_core.vh > climbBefore)
+        emit jumped();
     if (m_core.score() != m_lastScore) {
         m_lastScore = m_core.score();
         emit scoreChanged();
@@ -109,6 +132,10 @@ void Game::step(double dt)
             emit bestChanged();
         }
         emit stateChanged();
+        if (m_core.status == GameCore::Crashed)
+            emit crashed();
+        else
+            emit fell();
     }
     emit frame();
 }
