@@ -2,7 +2,7 @@
 Makefile
 *.o
 moc_*.cpp
-/harbour-bmitracker
+/bmitracker
 documentation.list
 .qmake.stash
 RPMS/

@@ -1,12 +1,15 @@
-Name:       harbour-bmitracker
+Name:       bmitracker
 Summary:    Track your weight and body mass index
-Version:    1.3.2
+Version:    1.0.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
 Source0:    %{name}-%{version}.tar.bz2
 
 Requires:   sailfishsilica-qt5 >= 0.10.9
+# Replaces the test builds, which were packaged as harbour-bmitracker.
+# The app's data lives outside the package, so nothing is lost.
+Obsoletes:  harbour-bmitracker <= 1.3.2
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
@@ -37,3 +40,8 @@ desktop-file-install --delete-original \
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
+
+%changelog
+* Wed Sep 30 2026 Valatalo - 1.0.0-1
+- First release: BMI on a blue, green, yellow and red scale, weight
+  history chart, kg/lb and cm/ft+in, cover with the latest weight.

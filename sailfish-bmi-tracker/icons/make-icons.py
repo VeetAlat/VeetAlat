@@ -50,7 +50,7 @@ icon = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172">
         font-size="27" fill="#2d3440" letter-spacing="3">BMI</text>
 </svg>
 '''
-open("icons/harbour-bmitracker.svg", "w").write(icon)
+open("icons/bmitracker.svg", "w").write(icon)
 
 # Cover background: the same gauge alone, drawn faintly by the cover.
 cover = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">
@@ -58,4 +58,4 @@ cover = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">
 </svg>
 '''
 open("qml/images/cover-gauge.svg", "w").write(cover)
-print("wrote icons/harbour-bmitracker.svg and qml/images/cover-gauge.svg")
+print("wrote icons/bmitracker.svg and qml/images/cover-gauge.svg")

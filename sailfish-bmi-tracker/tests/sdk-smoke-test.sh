@@ -20,7 +20,7 @@ cp -r "$HERE" "$WORK/app"
 rm -rf "$WORK/app/RPMS" "$WORK/app/Makefile" "$WORK/app"/*.o "$WORK/app"/moc_*
 cp "$HERE/tests/SmokeTest.qml" "$WORK/app/qml/SmokeTest.qml"
 # Add the test object as the main window's last child.
-python3 - "$WORK/app/qml/harbour-bmitracker.qml" <<'EOF'
+python3 - "$WORK/app/qml/bmitracker.qml" <<'EOF'
 import sys
 path = sys.argv[1]
 s = open(path).read().rstrip()
@@ -36,7 +36,7 @@ docker run --rm -v "$WORK/app:/home/mersdk/src" -w /home/mersdk/src \
         sb2 -t $TARGET -m sdk-install -R rpm -i --nodeps --force RPMS/*.i486.rpm > /dev/null 2>&1
         for run in 1 2; do
             QT_LOGGING_TO_CONSOLE=1 QT_QPA_PLATFORM=minimal timeout 15 \
-                sb2 -t $TARGET /usr/bin/harbour-bmitracker 2>&1 |
+                sb2 -t $TARGET /usr/bin/bmitracker 2>&1 |
                 grep -v -E 'dconf|pixel ratio|DPI|OpenGL|createPlatformOpenGL|Exit reason|^\$' || true
         done" > "$WORK/out.log" 2>&1
 

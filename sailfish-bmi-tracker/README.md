@@ -79,7 +79,7 @@ lands in `RPMS/`.
 With Developer mode on, copy the RPM to the phone and run:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.3.2-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/bmitracker-1.0.0-1.aarch64.rpm
 ```
 
 (or `devel-su rpm -U …` if pkcon refuses an unsigned package).
@@ -92,13 +92,13 @@ tests/sdk-smoke-test.sh          # end to end in the Sailfish SDK (Docker)
 tests/chart-background-test.sh   # the chart survives going to the background
 ```
 
-`chart-background-test.sh` covers a 1.1 bug where the history chart was
+`chart-background-test.sh` covers a bug from the test builds where the history chart was
 missing after going to the home screen and back. Sailfish frees an app's
 graphics memory in the background, and a QML `Canvas` then comes back blank
 unless it paints again. The chart now repaints when the app, its window or
 its drawing surface come back. The test renders the chart with a
 non-persistent GL context on a virtual display, hides and shows the window,
-and checks the chart looks the same. It fails on the 1.1 chart.
+and checks the chart looks the same. It fails on the old chart.
 
 The smoke test builds a copy of the app with `tests/SmokeTest.qml` added,
 runs it twice on Sailfish's own Qt and Silica, and checks the whole flow:
@@ -106,7 +106,7 @@ the pages get the app's data, the profile and weights save, everything is
 still there after a restart, the profile page reopens filled in, and
 nothing shows "NaN". It fails on any QML warning.
 
-It exists because 1.0 lost everything: `MainPage { store: store }`
+It exists because the first test build lost everything: `MainPage { store: store }`
 resolved `store` to the page's own empty property instead of the app's
 data object, so pages saved into nothing. The data object is now called
 `appStore`, and the smoke test fails on the old code.

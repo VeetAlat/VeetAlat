@@ -2,8 +2,8 @@
 Type=Application
 Name=BMI Tracker
 Comment=Track your weight and body mass index
-Icon=harbour-bmitracker
-Exec=harbour-bmitracker
+Icon=bmitracker
+Exec=bmitracker
 X-Nemo-Application-Type=silica-qt5
 
 [X-Sailjail]
