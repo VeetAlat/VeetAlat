@@ -1,14 +1,14 @@
 [Desktop Entry]
 Type=Application
-Name=Yleisuutiset
-Comment=Unofficial reader for Yle's news feeds
-Icon=harbour-yleisuutiset
-Exec=harbour-yleisuutiset
+Name=UutisRSS
+Comment=Unofficial app for Yle's news headlines
+Icon=harbour-uutisrss
+Exec=harbour-uutisrss
 X-Nemo-Application-Type=silica-qt5
 
 [X-Sailjail]
 # Needs the network to fetch Yle's RSS feeds; writes only its own cache
-# in ~/.local/share/org.veetalat/yleisuutiset.
+# in ~/.local/share/org.veetalat/uutisrss.
 Permissions=Internet
 OrganizationName=org.veetalat
-ApplicationName=yleisuutiset
+ApplicationName=uutisrss

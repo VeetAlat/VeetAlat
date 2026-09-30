@@ -20,14 +20,15 @@ HERE=$(cd "$(dirname "$0")/.." && pwd)
 WORK=$(mktemp -d)
 
 # Serve the fixtures with picture addresses pointing at this server, and a
-# real picture file for each, so image loading is tested too.
+# real picture file for each, so any attempt to load a photo would succeed
+# and show up in the server log (it must not happen).
 mkdir -p "$WORK/www"
 cp -r "$HERE/tests/fixtures/." "$WORK/www/"
 find "$WORK/www" -name "*.rss" -exec sed -i "s|https://images.cdn.yle.fi/|http://127.0.0.1:$PORT/|g" {} +
 grep -h -o "http://127.0.0.1:$PORT/[^\"<]*\.jpg" "$WORK/www" -r | sort -u | while read -r url; do
     file="$WORK/www/${url#http://127.0.0.1:"$PORT"/}"
     mkdir -p "$(dirname "$file")"
-    cp "$HERE/icons/172x172/harbour-yleisuutiset.png" "$file" # Qt reads the format from the content
+    cp "$HERE/icons/172x172/harbour-uutisrss.png" "$file" # Qt reads the format from the content
 done
 
 python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WORK/www" \
@@ -38,7 +39,7 @@ trap 'kill $SERVER 2> /dev/null; rm -rf "$WORK"' EXIT
 cp -r "$HERE" "$WORK/app"
 rm -rf "$WORK/app/RPMS" "$WORK/app/Makefile" "$WORK/app"/*.o "$WORK/app"/moc_*
 cp "$HERE/tests/SmokeTest.qml" "$WORK/app/qml/SmokeTest.qml"
-python3 - "$WORK/app/qml/harbour-yleisuutiset.qml" <<'EOF'
+python3 - "$WORK/app/qml/harbour-uutisrss.qml" <<'EOF'
 import sys
 path = sys.argv[1]
 s = open(path).read().rstrip()
@@ -53,9 +54,9 @@ docker run --rm --network host -v "$WORK/app:/home/mersdk/src" -w /home/mersdk/s
         mb2 -t $TARGET build > build.log 2>&1 || { tail -30 build.log; exit 1; }
         sb2 -t $TARGET -m sdk-install -R rpm -i --nodeps --force RPMS/*.i486.rpm > /dev/null 2>&1
         for run in 1 2; do
-            YLEISUUTISET_NO_WINDOW=1 YLEISUUTISET_FEED_BASE=http://127.0.0.1:$PORT/ \
+            UUTISRSS_NO_WINDOW=1 UUTISRSS_FEED_BASE=http://127.0.0.1:$PORT/ \
             QT_LOGGING_TO_CONSOLE=1 QT_QPA_PLATFORM=minimal timeout 30 \
-                sb2 -t $TARGET /usr/bin/harbour-yleisuutiset 2>&1 |
+                sb2 -t $TARGET /usr/bin/harbour-uutisrss 2>&1 |
                 grep -v -E 'dconf|pixel ratio|DPI|^\$' || true
         done" > "$WORK/out.log" 2>&1
 
@@ -70,6 +71,10 @@ runs=$(grep -c "SMOKE DONE" "$WORK/out.log" || true)
 warnings=$(grep -v "SMOKE" "$WORK/out.log" | grep -v "Sailfish/Silica/private/CoverWindow.qml" |
     grep -c -E "qml|Error|Warning|warning|unavailable|Binding loop" || true)
 fetches=$(grep -c "GET /" "$WORK/http.log" || true)
+# Yle's RSS terms forbid using the stories' photos, so the app must never
+# even download one, although the fixture feeds point at pictures.
+photos=$(grep -c -E "GET /[^ ]*\.(jpg|jpeg|png)" "$WORK/http.log" || true)
 
-echo "passed: $passes, failed: $fails, runs completed: $runs/2, QML warnings: $warnings, HTTP requests served: $fetches"
-[ "$fails" -eq 0 ] && [ "$runs" -eq 2 ] && [ "$warnings" -eq 0 ] && [ "$passes" -gt 0 ]
+echo "passed: $passes, failed: $fails, runs completed: $runs/2, QML warnings: $warnings," \
+     "HTTP requests served: $fetches, photos downloaded: $photos"
+[ "$fails" -eq 0 ] && [ "$runs" -eq 2 ] && [ "$warnings" -eq 0 ] && [ "$passes" -gt 0 ] && [ "$photos" -eq 0 ]

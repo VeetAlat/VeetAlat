@@ -29,8 +29,8 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryHighlightColor
-                text: "Tap a category to read its news. Pääuutiset are the top stories "
-                      + "from Yle's front page."
+                text: "Tap a category to see its headlines. Pääuutiset are the top "
+                      + "stories from Yle's front page."
             }
 
             Grid {

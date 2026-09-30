@@ -3,8 +3,14 @@ import "../js/rss.js" as Rss
 import "../js/feeds.js" as Feeds
 import "../js/cache.js" as Cache
 
-// Fetches Yle's RSS feeds, keeps the current category's articles, and
+// Fetches Yle's RSS feeds, keeps the current category's headlines, and
 // caches every fetched feed so the app starts instantly and works offline.
+//
+// Yle's RSS terms (yle.fi/aihe/a/20-10008076) allow showing headlines that
+// each link straight to the story on Yle's site, and forbid copying other
+// content or using the stories' photos. So only headline, link, time and
+// category are kept; pictures and summaries in the feed are dropped here,
+// before anything is shown or saved.
 // There is one, created in the main QML file as "newsStore".
 QtObject {
     id: store
@@ -16,7 +22,7 @@ QtObject {
     readonly property var category: Feeds.byKey(categoryKey)
     readonly property var categories: Feeds.categories
 
-    property var items: []          // articles of the current category
+    property var items: []          // headlines: [{ title, link, date, categories, id }]
     property real fetched: 0        // when they were fetched (ms), 0 = never
     property bool loading: false
     property string error: ""       // last fetch problem, "" if none
@@ -40,10 +46,30 @@ QtObject {
         refreshIfStale()
     }
 
+    // Only what the terms allow: the headline and where it leads.
+    function headlinesOnly(articles) {
+        var out = []
+        for (var i = 0; i < articles.length; i++) {
+            var a = articles[i]
+            out.push({ title: a.title, link: a.link, date: a.date,
+                       categories: a.categories || [], id: a.id })
+        }
+        return out
+    }
+
+    // Deletes every saved headline (Yle may ask users to delete the
+    // content; this does it in one go).
+    function clearSaved() {
+        try { Cache.clearFeeds() } catch (e) { }
+        items = []
+        fetched = 0
+        fromCache = false
+    }
+
     function showCached() {
         var cached = null
         try { cached = Cache.feed(categoryKey) } catch (e) { }
-        items = cached ? cached.items : []
+        items = cached ? headlinesOnly(cached.items) : []
         fetched = cached ? cached.fetched : 0
         fromCache = !!cached
         error = ""
@@ -81,7 +107,7 @@ QtObject {
                 error = "Yle's feed couldn't be read (" + e.message + ")."
                 return
             }
-            items = feed.items
+            items = headlinesOnly(feed.items)
             fetched = Date.now()
             fromCache = false
             try { Cache.saveFeed(key, fetched, items) } catch (e2) { }

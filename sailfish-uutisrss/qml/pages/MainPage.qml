@@ -3,8 +3,9 @@ import Sailfish.Silica 1.0
 import "../components"
 import "../js/rss.js" as Rss
 
-// Yle's news for the chosen category. Category buttons along the top;
-// pull down for all categories and refresh; tap an article to read it.
+// Yle's headlines for the chosen category. Category buttons along the top;
+// pull down for all categories, refresh and the About page. Tapping a
+// headline opens the story on yle.fi, as Yle's RSS terms require.
 Page {
     id: page
 
@@ -29,6 +30,9 @@ Page {
     }
     Component.onCompleted: if (news) news.refreshIfStale()
 
+    // Tests set this to see where a tap would go instead of opening the browser.
+    property var openLink: function(link) { Qt.openUrlExternally(link) }
+
     function openCategories() {
         pageStack.push(Qt.resolvedUrl("CategoriesPage.qml"), { news: page.news })
     }
@@ -41,8 +45,12 @@ Page {
         PullDownMenu {
             busy: page.news !== null && page.news.loading
             MenuItem {
+                text: "About and disclaimers"
+                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"), { news: page.news })
+            }
+            MenuItem {
                 text: "Open yle.fi in the browser"
-                onClicked: Qt.openUrlExternally("https://yle.fi/")
+                onClicked: page.openLink("https://yle.fi/")
             }
             MenuItem {
                 text: "All categories"
@@ -60,7 +68,7 @@ Page {
 
             PageHeader {
                 title: page.news ? page.news.category.name : ""
-                description: "Yleisuutiset · " + (page.news ? page.news.category.english : "")
+                description: "UutisRSS · " + (page.news ? page.news.category.english : "") + " · Yle"
             }
 
             // Category buttons, scrolled so the current one is visible.
@@ -106,16 +114,16 @@ Page {
                                                   ? " Showing saved news from " + when + ". Pull down to try again."
                                                   : " Pull down to try again.")
                     }
-                    return when ? "Updated " + when + " · pull down to refresh" : ""
+                    return when ? "Headlines from Yle, updated " + when + ". Tap one to read it on yle.fi." : ""
                 }
             }
         }
 
         delegate: ArticleItem {
             article: modelData
-            hero: index === 0
+            leading: index === 0
             now: page.now
-            onClicked: pageStack.push(Qt.resolvedUrl("ArticlePage.qml"), { article: modelData })
+            onOpenRequested: page.openLink(link)
         }
 
         ViewPlaceholder {

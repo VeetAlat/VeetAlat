@@ -1,5 +1,5 @@
-Name:       harbour-yleisuutiset
-Summary:    Unofficial reader for Yle's news feeds
+Name:       harbour-uutisrss
+Summary:    Unofficial app for Yle's news headlines
 Version:    1.0.0
 Release:    1
 License:    MIT
@@ -14,9 +14,11 @@ BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  desktop-file-utils
 
 %description
-Reads the news from Yle, the Finnish public broadcaster, through its
-official RSS feeds: the front page's top stories and each news category.
-Articles open on yle.fi. Not affiliated with Yle.
+The latest headlines from Yle, the Finnish public broadcaster, from Yle's
+public RSS feeds: the front page's top stories and each news category.
+Tapping a headline opens the story on yle.fi. Follows Yle's RSS terms:
+headlines only, no photos, free and without ads. Runs only on the device,
+with no tracking. Unofficial, not affiliated with Yle. Made by Valatalo.
 
 %prep
 %setup -q -n %{name}-%{version}
