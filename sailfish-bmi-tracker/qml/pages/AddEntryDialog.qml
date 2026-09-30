@@ -31,7 +31,7 @@ Dialog {
             spacing: Theme.paddingMedium
 
             DialogHeader {
-                title: "Add weight"
+                title: "Update weight"
                 acceptText: "Save"
             }
 

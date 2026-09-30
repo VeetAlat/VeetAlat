@@ -17,7 +17,7 @@ ApplicationWindow {
     cover: Component {
         CoverPage {
             store: appStore
-            // Cover "+" button: open the app straight on the Add weight dialog.
+            // Cover "+" button: open the app straight on the Update weight dialog.
             onAddRequested: {
                 app.activate()
                 pageStack.pop(null, PageStackAction.Immediate)

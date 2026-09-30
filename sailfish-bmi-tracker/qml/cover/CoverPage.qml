@@ -77,7 +77,7 @@ CoverBackground {
             wrapMode: Text.Wrap
             font.pixelSize: Theme.fontSizeExtraSmall
             color: Theme.secondaryColor
-            text: "Tap + to add one"
+            text: "Tap + to update"
         }
     }
 

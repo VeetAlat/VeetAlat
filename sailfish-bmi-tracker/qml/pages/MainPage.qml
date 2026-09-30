@@ -5,7 +5,7 @@ import "../js/bmi.js" as Bmi
 
 // Three states, each with instructions and a button for the next step:
 //   1. no profile yet   -> how it works + "Set up profile"
-//   2. no weights yet   -> "Add your first weight"
+//   2. no weights yet   -> "Enter your first weight"
 //   3. data             -> BMI, scale, chart, measurements
 Page {
     id: page
@@ -47,7 +47,7 @@ Page {
                 onClicked: page.openProfile()
             }
             MenuItem {
-                text: "Add weight"
+                text: "Update weight"
                 enabled: page.hasProfile
                 onClicked: page.openAddWeight()
             }
@@ -129,7 +129,7 @@ Page {
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
                     preferredWidth: Theme.buttonWidthLarge
-                    text: "Add your first weight"
+                    text: "Enter your first weight"
                     onClicked: page.openAddWeight()
                 }
                 Button {
@@ -179,7 +179,7 @@ Page {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Theme.paddingLarge
                     Button {
-                        text: "Add weight"
+                        text: "Update weight"
                         onClicked: page.openAddWeight()
                     }
                     Button {

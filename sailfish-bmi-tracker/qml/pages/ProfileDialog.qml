@@ -4,7 +4,7 @@ import "../components"
 import "../js/bmi.js" as Bmi
 
 // Profile and units, as three numbered steps with tap-to-choose buttons.
-// Save with the button at the bottom (or "Save" at the top).
+// Save with "Save" in the top right corner.
 Dialog {
     id: dialog
 
@@ -77,7 +77,7 @@ Dialog {
 
             Instruction {
                 text: "Your height is needed to work out your BMI. Age and gender "
-                      + "are optional. Fill in the three steps and tap Save."
+                      + "are optional. Fill in the three steps and tap Save at the top right."
             }
 
             // Step 1
@@ -185,14 +185,6 @@ Dialog {
                 color: Theme.errorColor
                 text: !dialog.heightValid ? "Enter your height in step 2 to save."
                                           : "Check your age in step 1."
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                preferredWidth: Theme.buttonWidthLarge
-                enabled: dialog.canAccept
-                text: "Save"
-                onClicked: dialog.accept()
             }
 
             Instruction {
