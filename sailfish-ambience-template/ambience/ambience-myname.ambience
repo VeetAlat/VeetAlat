@@ -1,0 +1,27 @@
+{
+    "displayName": "My Ambience",
+    "wallpaper": "wallpaper.jpg",
+    "highlightColor": "#8bd4ff",
+    "ringerToneFile": {
+        "file": "/usr/share/ambience/ambience-myname/sounds/ringtone.ogg"
+    },
+    "messageToneFile": {
+        "file": "/usr/share/ambience/ambience-myname/sounds/message.ogg"
+    },
+    "chatToneFile": {
+        "file": "/usr/share/ambience/ambience-myname/sounds/message.ogg"
+    },
+    "mailToneFile": {
+        "file": "/usr/share/ambience/ambience-myname/sounds/mail.ogg"
+    },
+    "internetCallToneFile": {
+        "file": "/usr/share/ambience/ambience-myname/sounds/ringtone.ogg"
+    },
+    "calendarToneFile": {
+        "file": "/usr/share/ambience/ambience-myname/sounds/calendar.ogg"
+    },
+    "clockAlarmToneFile": {
+        "file": "/usr/share/ambience/ambience-myname/sounds/alarm.ogg"
+    },
+    "favorite": true
+}
