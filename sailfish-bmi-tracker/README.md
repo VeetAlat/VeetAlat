@@ -79,7 +79,7 @@ lands in `RPMS/`.
 With Developer mode on, copy the RPM to the phone and run:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.3.1-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.3.2-1.aarch64.rpm
 ```
 
 (or `devel-su rpm -U …` if pkcon refuses an unsigned package).

@@ -36,7 +36,7 @@ Dialog {
             }
 
             Instruction {
-                text: "Type what your scale shows and tap Save. Change the date if "
+                text: "Type what your scale shows and tap Save at the top right. Change the date if "
                       + "you weighed yourself on another day."
             }
 
@@ -86,14 +86,6 @@ Dialog {
             CategoryLabel {
                 anchors.horizontalCenter: parent.horizontalCenter
                 category: dialog.valid ? Bmi.category(dialog.previewBmi) : null
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                preferredWidth: Theme.buttonWidthLarge
-                enabled: dialog.canAccept
-                text: "Save"
-                onClicked: dialog.accept()
             }
         }
     }

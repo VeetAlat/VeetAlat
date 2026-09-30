@@ -2,7 +2,8 @@
 """Generates the app icon and the cover's background gauge.
 
 Geometry is computed, not hand-drawn, so it stays exactly symmetrical:
-a half-circle gauge centred on the icon, split into four equal 45° segments
+an arch-shaped icon (like an old-fashioned scale) with a half-circle gauge
+sharing the arch's centre, split into four equal 45° segments
 (blue, green, yellow, red) with identical gaps, and a needle pointing at the
 middle of the green "normal" segment.
 Run: python3 icons/make-icons.py  (then rsvg-convert makes the PNGs)
@@ -34,13 +35,19 @@ def gauge(cx, cy, r, width, gap_deg, needle_len, needle_color, hub_r, opacity=1.
     return "\n  ".join(parts)
 
 
-# App icon: white disc with a soft grey rim, gauge and "BMI" centred.
+# App icon: an arch like an old-fashioned scale (semicircle on top,
+# straight sides, flat bottom with sharp corners), white with a soft grey
+# edge. The gauge shares the arch's centre, with BMI underneath.
+L, R, TOP, BOTTOM = 14, 158, 14, 162            # arch bounds
+ARCH_R = (R - L) / 2                            # semicircle radius (72)
+ARCH_CY = TOP + ARCH_R                          # semicircle centre y (86)
+arch = (f"M{L} {BOTTOM} L{L} {ARCH_CY} A{ARCH_R} {ARCH_R} 0 0 1 {R} {ARCH_CY} "
+        f"L{R} {BOTTOM} Z")
 icon = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172">
-  <circle cx="86" cy="86" r="84" fill="#ffffff"/>
-  <circle cx="86" cy="86" r="83" fill="none" stroke="#d5d9df" stroke-width="2"/>
-  {gauge(86, 96, 54, 17, 5, 44, "#2d3440", 9)}
-  <text x="86" y="138" text-anchor="middle" font-family="sans-serif" font-weight="700"
-        font-size="28" fill="#2d3440" letter-spacing="3">BMI</text>
+  <path d="{arch}" fill="#ffffff" stroke="#c9ced6" stroke-width="3" stroke-linejoin="miter"/>
+  {gauge(86, ARCH_CY + 8, 50, 16, 5, 40, "#2d3440", 8)}
+  <text x="86" y="144" text-anchor="middle" font-family="sans-serif" font-weight="700"
+        font-size="27" fill="#2d3440" letter-spacing="3">BMI</text>
 </svg>
 '''
 open("icons/harbour-bmitracker.svg", "w").write(icon)
