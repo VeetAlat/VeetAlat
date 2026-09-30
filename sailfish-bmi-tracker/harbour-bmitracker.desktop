@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=BMI Tracker
+Comment=Track your weight and body mass index
+Icon=harbour-bmitracker
+Exec=harbour-bmitracker
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Sandboxed with no extra permissions: the app only writes its own data
+# directory, ~/.local/share/org.veetalat/bmitracker.
+Permissions=
+OrganizationName=org.veetalat
+ApplicationName=bmitracker
