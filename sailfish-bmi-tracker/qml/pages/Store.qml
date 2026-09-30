@@ -92,6 +92,17 @@ QtObject {
         return true
     }
 
+    // Deletes everything the app has saved: profile and weights.
+    function clearAll() {
+        try {
+            Storage.clearAll()
+        } catch (e) {
+            return fail("Could not delete your data", e)
+        }
+        lastError = ""
+        return load()
+    }
+
     // "yyyy-mm-dd" for a Date, in local time.
     function isoDate(d) {
         function pad(n) { return (n < 10 ? "0" : "") + n }

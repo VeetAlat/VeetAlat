@@ -14,6 +14,23 @@ index over time.
 - Everything is **saved on the phone** and is there again the next time you
   open the app.
 - The cover shows your latest BMI, and its **+** button opens "Add weight".
+- **About and disclaimers** in the pull-down menu: not medical advice, made
+  with AI-assisted tools (Claude Code), non-profit and private, and a
+  **Delete all my data** button.
+
+Made by Valatalo.
+
+## Disclaimers
+
+- **Not medical advice.** BMI is a rough screening number, not a diagnosis.
+  It doesn't tell muscle from fat and suits some people poorly (athletes,
+  pregnant people, older adults, anyone under 20).
+- **Made with AI-assisted tools** (Claude Code).
+- **Non-profit, on your device only, private.** The app has no network
+  permission at all: no account, tracking or analytics. Everything stays on
+  the phone and can be deleted from the About page.
+
+To add an OpenRepos link, set `OPENREPOS_URL` in `qml/js/about.js`.
 
 ## Categories
 
@@ -62,7 +79,7 @@ lands in `RPMS/`.
 With Developer mode on, copy the RPM to the phone and run:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.2.0-1.aarch64.rpm
 ```
 
 (or `devel-su rpm -U …` if pkcon refuses an unsigned package).
@@ -70,9 +87,18 @@ devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.1.0-1.aarch64.rpm
 ## Tests
 
 ```sh
-node tests/test_bmi.js       # BMI maths, unit conversion, categories, parsing
-tests/sdk-smoke-test.sh      # end to end in the Sailfish SDK (Docker)
+node tests/test_bmi.js           # BMI maths, unit conversion, categories, parsing
+tests/sdk-smoke-test.sh          # end to end in the Sailfish SDK (Docker)
+tests/chart-background-test.sh   # the chart survives going to the background
 ```
+
+`chart-background-test.sh` covers a 1.1 bug where the history chart was
+missing after going to the home screen and back. Sailfish frees an app's
+graphics memory in the background, and a QML `Canvas` then comes back blank
+unless it paints again. The chart now repaints when the app, its window or
+its drawing surface come back. The test renders the chart with a
+non-persistent GL context on a virtual display, hides and shows the window,
+and checks the chart looks the same. It fails on the 1.1 chart.
 
 The smoke test builds a copy of the app with `tests/SmokeTest.qml` added,
 runs it twice on Sailfish's own Qt and Silica, and checks the whole flow:

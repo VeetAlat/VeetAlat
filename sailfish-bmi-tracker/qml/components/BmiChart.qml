@@ -1,4 +1,5 @@
 import QtQuick 2.0
+import QtQuick.Window 2.2
 import Sailfish.Silica 1.0
 import "../js/bmi.js" as Bmi
 
@@ -50,12 +51,37 @@ Item {
     onWidthChanged: canvas.requestPaint()
     onHeightChanged: canvas.requestPaint()
     onSelectedChanged: canvas.requestPaint()
+    onVisibleChanged: if (visible) canvas.requestPaint()
+
+    // When the app goes to the background, Sailfish frees its graphics
+    // memory, and a Canvas comes back blank unless it paints again. Without
+    // these the chart was empty after returning from the home screen.
+    // Covered three ways: the app becoming active again, the window being
+    // shown or activated again, and the canvas getting a new surface.
+    Connections {
+        target: Qt.application
+        onActiveChanged: if (Qt.application.active) canvas.requestPaint()
+    }
+    readonly property int windowVisibility: Window.visibility
+    readonly property bool windowActive: Window.active
+    onWindowVisibilityChanged: if (windowVisibility !== Window.Hidden) canvas.requestPaint()
+    onWindowActiveChanged: if (windowActive) canvas.requestPaint()
+
+    // How many times the chart has painted (for the tests).
+    property int paintCount: 0
+
+    // Ask for a repaint, e.g. after the app was in the background.
+    function repaint() { canvas.requestPaint() }
 
     Canvas {
         id: canvas
         anchors.fill: parent
 
+        // The drawing surface was recreated: draw on it again.
+        onAvailableChanged: if (available) requestPaint()
+
         onPaint: {
+            chart.paintCount++
             var ctx = getContext("2d")
             ctx.reset()
             ctx.clearRect(0, 0, width, height)

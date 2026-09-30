@@ -111,6 +111,21 @@ QtObject {
                   Bmi.formatBmi(s.currentBmi) === "26.8" && s.currentCategory.key === "over")
 
             check("delete works", s.removeEntry(s.entries[0].id) && s.entries.length === 1)
+
+            // About and disclaimers, opened the way the menu opens it.
+            var about = make("pages/AboutPage.qml", { store: s })
+            check("about page opens", about !== null)
+            check("made by Valatalo", about !== null && about.author === "Valatalo")
+            check("no OpenRepos link until one is set", about !== null && about.openReposUrl === "")
+
+            // The chart is built with the Window import it needs on Qt 5.6.
+            var chart = make("components/BmiChart.qml", { entries: s.entries })
+            check("chart loads with its background-repaint hooks",
+                  chart !== null && chart.paintCount !== undefined && typeof chart.repaint === "function")
+
+            // "Delete all my data" (last: it wipes what the checks above used).
+            check("delete all data empties the profile and weights",
+                  s.clearAll() && !s.hasProfile && s.entries.length === 0)
         }
         console.log("SMOKE DONE failures=" + failures)
     }

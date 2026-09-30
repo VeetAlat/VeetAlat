@@ -39,6 +39,10 @@ Page {
 
         PullDownMenu {
             MenuItem {
+                text: "About and disclaimers"
+                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"), { store: page.store })
+            }
+            MenuItem {
                 text: "Edit profile"
                 onClicked: page.openProfile()
             }

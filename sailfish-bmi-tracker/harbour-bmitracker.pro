@@ -14,8 +14,10 @@ DISTFILES += \
     qml/components/Instruction.qml \
     qml/components/Step.qml \
     qml/cover/CoverPage.qml \
+    qml/js/about.js \
     qml/js/bmi.js \
     qml/js/storage.js \
+    qml/pages/AboutPage.qml \
     qml/pages/AddEntryDialog.qml \
     qml/pages/MainPage.qml \
     qml/pages/ProfileDialog.qml \

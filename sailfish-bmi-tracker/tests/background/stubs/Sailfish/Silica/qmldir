@@ -1,0 +1,4 @@
+module Sailfish.Silica
+singleton Theme 1.0 Theme.qml
+TruncationMode 1.0 TruncationMode.qml
+Label 1.0 Label.qml

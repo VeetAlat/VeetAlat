@@ -65,3 +65,11 @@ function removeEntry(id) {
         tx.executeSql("DELETE FROM entries WHERE id = ?", [id])
     })
 }
+
+// Deletes the profile and every weight.
+function clearAll() {
+    open().transaction(function(tx) {
+        tx.executeSql("DELETE FROM profile")
+        tx.executeSql("DELETE FROM entries")
+    })
+}
