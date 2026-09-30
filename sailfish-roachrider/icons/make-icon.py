@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generates the Roach Rider icon: the roach on its bike facing you, in
-front of a neon grid, with "RR" spray-painted in neon on the wall behind.
+front of a neon grid, with "RR" spray-painted in neon on the wall behind,
+in a hurry: tilted, shaky, dripping.
 
 The roach is a picture made by tools/roach-render (see tools/make-images.sh),
 put into the SVG as-is.
@@ -42,42 +43,64 @@ def grid():
     return "\n    ".join(out)
 
 
-def letter_r(x, top, bottom, w):
-    """An R as one stroked path: stem, bowl and leg."""
-    mid = top + (bottom - top) * 0.52
-    r = (mid - top) / 2
-    return (f"M{x} {bottom} V{top} H{x + w - r} A{r} {r} 0 0 1 {x + w - r} {mid} H{x} "
-            f"M{x + w * 0.42} {mid} L{x + w} {bottom}")
+def letter_r(rng, x, top, bottom, w, shake):
+    """An R as one stroked path: stem, bowl and leg, drawn by a shaking
+    hand: every point is a little off, and the bowl overshoots."""
+    def j(v):
+        return v + rng.uniform(-shake, shake)
+    mid = top + (bottom - top) * 0.5
+    return (f"M{j(x)} {j(bottom + 3)} "
+            f"L{j(x + 2)} {j(top + (bottom - top) * 0.5)} L{j(x)} {j(top)} "
+            f"C{j(x + w * 0.6)} {j(top - 6)}, {j(x + w + 8)} {j(top + 4)}, {j(x + w)} {j(mid - 10)} "
+            f"C{j(x + w - 4)} {j(mid + 2)}, {j(x + w * 0.4)} {j(mid + 2)}, {j(x - 2)} {j(mid)} "
+            f"M{j(x + w * 0.35)} {j(mid + 1)} L{j(x + w * 0.7)} {j(mid + (bottom - mid) * 0.5)} "
+            f"L{j(x + w + 6)} {j(bottom + 4)}")
 
 
 def spray():
-    """RR in spray paint: rough edged strokes, drips and overspray."""
-    rng = random.Random(7)
-    top, bottom, w = 16, 84, 44
-    xs = (27, 97)
-    paths = " ".join(letter_r(x, top, bottom, w) for x in xs)
-    parts = []
-    # Overspray: fine dots round the letters.
-    for x0 in xs:
-        for _ in range(140):
-            px = rng.uniform(x0 - 10, x0 + w + 10)
-            py = rng.uniform(top - 10, bottom + 10)
-            col = MAGENTA if py < (top + bottom) / 2 else CYAN
-            parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="{rng.uniform(0.4, 1.2):.2f}" '
-                         f'fill="{col}" fill-opacity="{rng.uniform(0.25, 0.7):.2f}"/>')
-    # Drips running down from the letters.
-    for (dx, length) in ((27, 12), (27 + 44, 7), (97, 16), (97 + 18, 9), (97 + 44, 11), (27 + 18, 5)):
-        parts.append(f'<path d="M{dx} {bottom} v{length}" stroke="url(#paint)" stroke-width="3.2" '
-                     f'stroke-linecap="round" filter="url(#rough)"/>')
-        parts.append(f'<circle cx="{dx}" cy="{bottom + length + 1}" r="2.4" fill="{CYAN}"/>')
-    speckles = "\n    ".join(parts)
-    return f'''<g>
-    <path d="{paths}" fill="none" stroke="url(#paint)" stroke-width="22" stroke-opacity="0.35"
-          stroke-linecap="round" stroke-linejoin="round" filter="url(#haze)"/>
-    <path d="{paths}" fill="none" stroke="url(#paint)" stroke-width="13"
-          stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)"/>
-    {speckles}
-  </g>'''
+    """RR sprayed in a panic: tilted letters, a sloppy second pass, drips,
+    splatter and overspray."""
+    rng = random.Random(11)
+    top, bottom, w = 20, 80, 42
+    # Each letter: left edge, tilt in degrees.
+    letters = ((24, -19), (100, 13))
+    out = []
+    for (x0, tilt) in letters:
+        cx, cy = x0 + w / 2, (top + bottom) / 2
+        first = letter_r(rng, x0, top, bottom, w, 2.5)
+        second = letter_r(rng, x0 + 2, top + 1, bottom - 1, w, 4.0)
+        parts = []
+        # Overspray: fine dots round the letter.
+        for _ in range(170):
+            px = rng.uniform(x0 - 14, x0 + w + 14)
+            py = rng.uniform(top - 14, bottom + 14)
+            col = MAGENTA if py < cy else CYAN
+            parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="{rng.uniform(0.4, 1.3):.2f}" '
+                         f'fill="{col}" fill-opacity="{rng.uniform(0.25, 0.75):.2f}"/>')
+        # Splatter: a few bigger blobs flung off the can.
+        for _ in range(9):
+            px = rng.uniform(x0 - 10, x0 + w + 12)
+            py = rng.uniform(top - 8, bottom + 10)
+            parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="{rng.uniform(1.4, 3.0):.2f}" fill="url(#paint)"/>')
+        # Drips: long and uneven, from wherever the paint pooled.
+        for dx in (x0 + rng.uniform(-2, 3), x0 + w * 0.45 + rng.uniform(-3, 3), x0 + w + rng.uniform(2, 6),
+                   x0 + w * 0.2 + rng.uniform(-2, 2)):
+            length = rng.uniform(8, 24)
+            parts.append(f'<path d="M{dx:.1f} {bottom - 2} q{rng.uniform(-1.5, 1.5):.1f} {length / 2:.1f} '
+                         f'{rng.uniform(-1, 1):.1f} {length:.1f}" fill="none" stroke="url(#paint)" '
+                         f'stroke-width="{rng.uniform(2.2, 3.4):.1f}" stroke-linecap="round" filter="url(#rough)"/>')
+            parts.append(f'<circle cx="{dx:.1f}" cy="{bottom - 2 + length:.1f}" r="{rng.uniform(1.8, 2.8):.1f}" fill="{CYAN}"/>')
+        dots = "\n      ".join(parts)
+        out.append(f'''<g transform="rotate({tilt} {cx} {cy})">
+      <path d="{first}" fill="none" stroke="url(#paint)" stroke-width="24" stroke-opacity="0.35"
+            stroke-linecap="round" stroke-linejoin="round" filter="url(#haze)"/>
+      <path d="{first}" fill="none" stroke="url(#paint)" stroke-width="12"
+            stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)"/>
+      <path d="{second}" fill="none" stroke="url(#paint)" stroke-width="6" stroke-opacity="0.75"
+            stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)"/>
+      {dots}
+    </g>''')
+    return "\n    ".join(out)
 
 
 def build(roach_png):
@@ -95,7 +118,7 @@ def build(roach_png):
     </linearGradient>
     <filter id="rough" x="-10%" y="-10%" width="120%" height="120%">
       <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="3" result="noise"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
     <filter id="haze" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="4"/>
@@ -112,7 +135,7 @@ def build(roach_png):
     {grid()}
     </g>
     {spray()}
-    <image x="16" y="36" width="140" height="140" xlink:href="data:image/png;base64,{roach}"/>
+    <image x="8" y="26" width="158" height="158" xlink:href="data:image/png;base64,{roach}"/>
   </g>
   <rect x="7.5" y="7.5" width="157" height="157" rx="32.5" fill="none" stroke="{MAGENTA}" stroke-opacity="0.6" stroke-width="3"/>
 </svg>

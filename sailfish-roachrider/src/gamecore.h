@@ -18,7 +18,7 @@
 // long as a lane is wide, so the grid is made of squares.
 namespace Tuning {
 const double HalfWidth = 1.5;       // the tunnel is 3 x 3, a lane is 1 wide
-const double StartSpeed = 9.0;      // rows per second
+const double StartSpeed = 10.0;     // rows per second
 const double MaxSpeed = 20.0;
 const double Accel = 0.12;          // speed^2 grows by 2 * Accel every row
 const double LaneSpeed = 12.0;      // lanes per second when changing lanes
@@ -28,7 +28,7 @@ const double BlockHeight = 0.5;
 const double BikeHalfLength = 0.45;
 const double FallDepth = 1.5;       // how far the bike falls before it's over
 const double JumpBuffer = 0.12;     // a jump pressed this early still counts on landing
-const int SafeStart = 30;           // rows of plain grid at the start
+const int SafeStart = 20;           // rows of plain grid at the start
 const int Ahead = 70;               // rows built ahead of the bike
 const int Behind = 12;              // rows kept behind it
 }

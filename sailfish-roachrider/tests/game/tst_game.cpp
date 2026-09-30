@@ -202,11 +202,11 @@ private slots:
     {
         // A player with perfect reactions gets through a long way on many
         // different tracks, so there's always a way through.
-        for (unsigned seed = 1; seed <= 12; ++seed) {
+        for (unsigned seed = 1; seed <= 30; ++seed) {
             GameCore g;
             g.reset(seed);
-            const int reached = Bot::play(g, 2500);
-            QVERIFY2(reached >= 2500, qPrintable(QString("seed %1: stuck at row %2 (%3)")
+            const int reached = Bot::play(g, 3000);
+            QVERIFY2(reached >= 3000, qPrintable(QString("seed %1: stuck at row %2 (%3)")
                                                  .arg(seed).arg(reached)
                                                  .arg(g.status == GameCore::Fell ? "fell" : "crashed")));
         }
@@ -267,8 +267,8 @@ private slots:
         QSignalSpy frames(&game, &Game::frame);
         for (int i = 0; i < 60; ++i)
             game.step(1.0 / 60);
-        QCOMPARE(game.score(), 9);   // 9 rows a second at the start
-        QCOMPARE(score.count(), 9);
+        QCOMPARE(game.score(), 10);  // 10 rows a second at the start
+        QCOMPARE(score.count(), 10);
         QCOMPARE(frames.count(), 60);
     }
 };

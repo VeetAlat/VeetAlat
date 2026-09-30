@@ -1,6 +1,6 @@
 Name:       roachrider
 Summary:    The roach needs to ride its way through the neon grid
-Version:    0.2.0
+Version:    0.3.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -41,6 +41,12 @@ desktop-file-install --delete-original \
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Wed Sep 30 2026 Valatalo - 0.3.0-1
+- Harder: about 40% more obstacles a second, a faster start, and the
+  track gets tough sooner: two or three sides gone, double rows of
+  blocks, and gauntlets (a side gone and blocks on what's left).
+- Icon: a bigger roach, and RR sprayed in more of a panic.
+
 * Wed Sep 30 2026 Valatalo - 0.2.0-1
 - Now Roach Rider: the rider is a roach, rendered from a 3D model, with a
   new icon and start screen.

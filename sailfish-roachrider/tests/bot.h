@@ -3,6 +3,7 @@
 
 #include "../src/gamecore.h"
 
+#include <algorithm>
 #include <cstdlib>
 
 // A test player with perfect reactions. It tries moves on copies of the
@@ -61,7 +62,10 @@ inline Move decide(const GameCore &g)
             for (const Move &second : moves()) {
                 GameCore b = later;
                 apply(b, second);
-                if (survives(b, 0.9))
+                // Look ahead about 12 rows (at most 0.9 s): far enough to
+                // see what's coming, short enough to plan the next move
+                // at the next decision, like a player does.
+                if (survives(b, std::min(0.9, 12 / GameCore::speedAt(b.dist))))
                     return first;
             }
         }

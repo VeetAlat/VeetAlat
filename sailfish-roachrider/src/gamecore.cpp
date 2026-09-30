@@ -156,8 +156,8 @@ void GameCore::ensureRows(int upTo)
 
 // Adds one obstacle and the plain stretch after it. Every obstacle can be
 // passed: by jumping, or by moving to a side that's still there. The plain
-// stretch is longer than a jump, so there's time to land and get ready for
-// the next one, and it grows as the bike speeds up.
+// stretch after it is just longer than a jump, so there's room to land
+// before the next one, and it grows as the bike speeds up.
 void GameCore::generate()
 {
     Row tiles;
@@ -167,53 +167,67 @@ void GameCore::generate()
         rows.push_back(tiles);
         return;
     }
-    const double d = std::min(1.0, (at - SafeStart) / 1500.0);   // difficulty, 0 to 1
+    const double d = std::min(1.0, (at - SafeStart) / 700.0);    // difficulty, 0 to 1
     const double speed = speedAt(at);
     // Aim half the obstacles at the side the bike is on.
     const int face = rnd() < 0.5 ? lane() / 3 : randInt(0, 3);
-    const double pick = rnd();
+    const int dir = rnd() < 0.5 ? 1 : 3;
+    double pick = rnd();
+    if (pick >= 0.8 && d < 0.25)
+        pick = 0;   // no gauntlets at the very start
 
-    if (pick < 0.36 || (pick >= 0.78 && d < 0.2)) {
-        // One side of the tunnel is gone (later two, even three): ride on
-        // another side.
-        int faces = 1;
-        if (d > 0.3 && rnd() < 0.45)
-            faces = 2;
-        if (d > 0.65 && rnd() < 0.25)
-            faces = 3;
-        const int dir = rnd() < 0.5 ? 1 : 3;
-        Row r = tiles;
+    // Takes away `faces` sides of the tunnel, starting at `face`.
+    auto sidesGone = [&](Row r, int faces) {
         for (int i = 0; i < faces; ++i) {
-            int f = (face + i * dir) % 4;
+            const int f = (face + i * dir) % 4;
             for (int s = 0; s < 3; ++s)
                 r[f * 3 + s] = Hole;
         }
+        return r;
+    };
+
+    if (pick < 0.3) {
+        // One side of the tunnel is gone (soon two, later three): ride on
+        // another side.
+        int faces = 1;
+        if (d > 0.1 && rnd() < 0.5)
+            faces = 2;
+        if (d > 0.4 && rnd() < 0.3)
+            faces = 3;
+        const Row r = sidesGone(tiles, faces);
         for (int i = 0, n = randInt(5, 8 + int(6 * d)); i < n; ++i)
             rows.push_back(r);
-    } else if (pick < 0.54) {
+    } else if (pick < 0.45) {
         // A gap all the way round: jump. Never longer than about half a jump.
         Row r;
         r.fill(Hole);
         const int longest = std::max(1, std::min(3, int(speed * airTime() * 0.55)));
         for (int i = 0, n = randInt(1, longest); i < n; ++i)
             rows.push_back(r);
-    } else if (pick < 0.78) {
-        // Blocks: jump over them or go round.
-        Row r = tiles;
-        if (rnd() < 0.5) {
-            for (int l = 0; l < Lanes; ++l)
-                if (rnd() < 0.3 + 0.3 * d)
-                    r[l] = Block;
-        } else {
-            for (int s = 0; s < 3; ++s)
-                r[face * 3 + s] = Block;
-            if (d > 0.4)
+    } else if (pick < 0.65) {
+        // Blocks: jump over them or go round. Later, a second row of them
+        // just after the first.
+        const int rowsOfBlocks = d > 0.3 && rnd() < 0.5 ? 2 : 1;
+        for (int k = 0; k < rowsOfBlocks; ++k) {
+            Row r = tiles;
+            if (rnd() < 0.5) {
                 for (int l = 0; l < Lanes; ++l)
-                    if (rnd() < 0.25)
+                    if (rnd() < 0.4 + 0.3 * d)
                         r[l] = Block;
+            } else {
+                for (int s = 0; s < 3; ++s)
+                    r[((face + k) % 4) * 3 + s] = Block;
+                if (d > 0.2)
+                    for (int l = 0; l < Lanes; ++l)
+                        if (rnd() < 0.3)
+                            r[l] = Block;
+            }
+            rows.push_back(r);
+            if (k + 1 < rowsOfBlocks)
+                for (int i = 0, n = int(std::ceil(speed * airTime())) + 1; i < n; ++i)
+                    rows.push_back(tiles);
         }
-        rows.push_back(r);
-    } else {
+    } else if (pick < 0.8) {
         // Stripes: only the middle lanes are left, or only the outer ones.
         const bool middle = rnd() < 0.5;
         Row r = tiles;
@@ -224,10 +238,23 @@ void GameCore::generate()
         }
         for (int i = 0, n = randInt(6, 10 + int(8 * d)); i < n; ++i)
             rows.push_back(r);
+    } else {
+        // A gauntlet: sides of the tunnel gone, and blocks on what's left.
+        // Ride round to another side, then jump or dodge the blocks there.
+        const Row r = sidesGone(tiles, d > 0.5 && rnd() < 0.5 ? 2 : 1);
+        const int n = randInt(8, 12);
+        for (int i = 0; i < n; ++i) {
+            Row row = r;
+            if (i == n / 2)
+                for (int l = 0; l < Lanes; ++l)
+                    if (row[l] == Tile && rnd() < 0.45)
+                        row[l] = Block;
+            rows.push_back(row);
+        }
     }
 
     // Room to land from a late jump over the last obstacle, and then time
     // to get ready for the next.
-    for (int i = 0, n = int(std::ceil(speed * airTime())) + 4; i < n; ++i)
+    for (int i = 0, n = int(std::ceil(speed * airTime())) + 1; i < n; ++i)
         rows.push_back(tiles);
 }

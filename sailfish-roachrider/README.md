@@ -26,9 +26,10 @@ there's a pause button in the top right.
 
 - `src/gamecore.*`: the whole game with no Qt: the track, the bike and the
   rules. The track is built as you ride, one obstacle at a time: a side of
-  the tunnel gone, a gap all the way round, a row of blocks, or stripes of
-  holes. Each is followed by a plain stretch longer than a jump, so there's
-  always time to land and get ready.
+  the tunnel gone, a gap all the way round, a row or two of blocks,
+  stripes of holes, or a gauntlet (a side gone and blocks on what's left).
+  Each is followed by a plain stretch just longer than a jump, so there's
+  always room to land.
 - `src/game.*`: the game as QML sees it: the game loop, the buttons, the
   best distance.
 - `src/tunnelview.*`: draws the tunnel and blocks in perspective as lists
@@ -64,7 +65,7 @@ tests/sdk-smoke-test.sh     # the whole app in the Sailfish SDK (Docker)
 
 - `run-tests.sh` checks lane changes and riding up the walls, falling into
   holes, jumping gaps and blocks, and saving the best distance. A bot
-  with perfect reactions also rides 2500 rows of 12 different tracks, which
+  with perfect reactions also rides 3000 rows of 30 different tracks, which
   shows every track the game builds can be ridden.
 - `sdk-smoke-test.sh` runs the app twice on Sailfish's own Qt 5.6 and
   Silica. It plays a game through the page's buttons (moving, jumping,
@@ -76,7 +77,7 @@ tests/sdk-smoke-test.sh     # the whole app in the Sailfish SDK (Docker)
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/ (armv7hl for 32-bit)
-devel-su pkcon install-local ~/Downloads/roachrider-0.2.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/roachrider-0.3.0-1.aarch64.rpm
 ```
 
 ## Privacy

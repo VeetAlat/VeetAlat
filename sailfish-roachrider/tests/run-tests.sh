@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Game rules and track tests, on the build machine's Qt (5.15 is fine).
-# Includes a bot with perfect reactions riding 2500 rows of a dozen
+# Includes a bot with perfect reactions riding 3000 rows of 30
 # different tracks, to show every track the game builds can be ridden.
 
 set -eu
