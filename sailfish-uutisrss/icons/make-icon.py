@@ -120,5 +120,5 @@ def build():
 '''
 
 
-open("icons/harbour-uutisrss.svg", "w").write(build())
-print("wrote icons/harbour-uutisrss.svg")
+open("icons/uutisrss.svg", "w").write(build())
+print("wrote icons/uutisrss.svg")

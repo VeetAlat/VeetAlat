@@ -2,8 +2,8 @@
 Type=Application
 Name=UutisRSS
 Comment=Unofficial app for Yle's news headlines
-Icon=harbour-uutisrss
-Exec=harbour-uutisrss
+Icon=uutisrss
+Exec=uutisrss
 X-Nemo-Application-Type=silica-qt5
 
 [X-Sailjail]

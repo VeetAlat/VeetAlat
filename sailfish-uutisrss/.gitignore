@@ -2,7 +2,7 @@
 Makefile
 *.o
 moc_*.cpp
-/harbour-uutisrss
+/uutisrss
 documentation.list
 .qmake.stash
 RPMS/

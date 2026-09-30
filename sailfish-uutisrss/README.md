@@ -88,7 +88,7 @@ page then shows a "More apps on OpenRepos" button under "Made by Valatalo".
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/harbour-uutisrss-1.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/uutisrss-1.0.0-1.aarch64.rpm
 ```
 
 ## Tests

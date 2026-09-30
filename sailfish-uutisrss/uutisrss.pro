@@ -1,4 +1,4 @@
-TARGET = harbour-uutisrss
+TARGET = uutisrss
 
 CONFIG += sailfishapp
 
@@ -6,7 +6,7 @@ SOURCES += \
     src/main.cpp
 
 DISTFILES += \
-    qml/harbour-uutisrss.qml \
+    qml/uutisrss.qml \
     qml/components/ArticleItem.qml \
     qml/components/CategoryButton.qml \
     qml/cover/CoverPage.qml \
@@ -18,7 +18,7 @@ DISTFILES += \
     qml/pages/CategoriesPage.qml \
     qml/pages/MainPage.qml \
     qml/pages/NewsStore.qml \
-    harbour-uutisrss.desktop \
-    rpm/harbour-uutisrss.spec
+    uutisrss.desktop \
+    rpm/uutisrss.spec
 
 SAILFISHAPP_ICONS = 86x86 108x108 128x128 172x172

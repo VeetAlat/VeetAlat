@@ -28,7 +28,7 @@ find "$WORK/www" -name "*.rss" -exec sed -i "s|https://images.cdn.yle.fi/|http:/
 grep -h -o "http://127.0.0.1:$PORT/[^\"<]*\.jpg" "$WORK/www" -r | sort -u | while read -r url; do
     file="$WORK/www/${url#http://127.0.0.1:"$PORT"/}"
     mkdir -p "$(dirname "$file")"
-    cp "$HERE/icons/172x172/harbour-uutisrss.png" "$file" # Qt reads the format from the content
+    cp "$HERE/icons/172x172/uutisrss.png" "$file" # Qt reads the format from the content
 done
 
 python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WORK/www" \
@@ -39,7 +39,7 @@ trap 'kill $SERVER 2> /dev/null; rm -rf "$WORK"' EXIT
 cp -r "$HERE" "$WORK/app"
 rm -rf "$WORK/app/RPMS" "$WORK/app/Makefile" "$WORK/app"/*.o "$WORK/app"/moc_*
 cp "$HERE/tests/SmokeTest.qml" "$WORK/app/qml/SmokeTest.qml"
-python3 - "$WORK/app/qml/harbour-uutisrss.qml" <<'EOF'
+python3 - "$WORK/app/qml/uutisrss.qml" <<'EOF'
 import sys
 path = sys.argv[1]
 s = open(path).read().rstrip()
@@ -56,7 +56,7 @@ docker run --rm --network host -v "$WORK/app:/home/mersdk/src" -w /home/mersdk/s
         for run in 1 2; do
             UUTISRSS_NO_WINDOW=1 UUTISRSS_FEED_BASE=http://127.0.0.1:$PORT/ \
             QT_LOGGING_TO_CONSOLE=1 QT_QPA_PLATFORM=minimal timeout 30 \
-                sb2 -t $TARGET /usr/bin/harbour-uutisrss 2>&1 |
+                sb2 -t $TARGET /usr/bin/uutisrss 2>&1 |
                 grep -v -E 'dconf|pixel ratio|DPI|^\$' || true
         done" > "$WORK/out.log" 2>&1
 
