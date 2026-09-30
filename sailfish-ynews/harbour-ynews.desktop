@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Y-News
+Comment=Unofficial reader for Yle's news feeds
+Icon=harbour-ynews
+Exec=harbour-ynews
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Needs the network to fetch Yle's RSS feeds; writes only its own cache
+# in ~/.local/share/org.veetalat/ynews.
+Permissions=Internet
+OrganizationName=org.veetalat
+ApplicationName=ynews

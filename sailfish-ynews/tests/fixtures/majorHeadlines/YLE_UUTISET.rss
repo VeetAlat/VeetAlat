@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Yle Uutiset | Pääuutiset</title>
+    <link>https://yle.fi/uutiset</link>
+    <description>Yle Uutiset | Pääuutiset</description>
+    <language>fi</language>
+    <atom:link href="https://feeds.yle.fi/uutiset/v1/majorHeadlines/YLE_UUTISET.rss" rel="self" type="application/rss+xml"/>
+    <item>
+      <title><![CDATA[Hallitus esittää muutoksia työttömyysturvaan – "Tämä koskee kaikkia"]]></title>
+      <link>https://yle.fi/a/74-20100001</link>
+      <description><![CDATA[Esitys lähtee lausuntokierrokselle <b>ensi viikolla</b>.]]></description>
+      <pubDate>Tue, 30 Sep 2026 12:03:15 +0300</pubDate>
+      <guid isPermaLink="false">74-20100001</guid>
+      <category>Kotimaa</category>
+      <category>Politiikka</category>
+      <enclosure url="https://images.cdn.yle.fi/image/upload/w_800/39-100001.jpg" type="image/jpeg" length="0"/>
+    </item>
+    <item>
+      <title>S&#228;&#228; kylmenee viikonloppuna &amp; lunta tulee pohjoiseen</title>
+      <link>https://yle.fi/a/74-20100002</link>
+      <description>Pakkasta voi olla jopa &lt;b&gt;&#8211;15&lt;/b&gt; astetta.</description>
+      <pubDate>Tue, 30 Sep 2026 08:30:00 GMT</pubDate>
+      <guid isPermaLink="false">74-20100002</guid>
+      <category>Sää</category>
+      <media:content url="https://images.cdn.yle.fi/image/upload/w_800/39-100002.jpg" medium="image"/>
+    </item>
+    <item>
+      <title>Tutkimus: suomalaiset liikkuvat aiempaa vähemmän</title>
+      <link>https://yle.fi/a/74-20100003</link>
+      <description><![CDATA[<p><img src="https://images.cdn.yle.fi/image/upload/w_400/39-100003.jpg" alt=""/></p><p>Erityisesti nuorten liikunta on vähentynyt.</p>]]></description>
+      <pubDate>Mon, 29 Sep 2026 21:15:00 +0300</pubDate>
+      <guid isPermaLink="false">74-20100003</guid>
+      <category>Terveys</category>
+    </item>
+    <item>
+      <title>Uutinen ilman kuvaa</title>
+      <link>https://yle.fi/a/74-20100004</link>
+      <pubDate>Mon, 29 Sep 2026 07:00:00 +0300</pubDate>
+      <enclosure url="https://yle.fi/audio/74-20100004.mp3" type="audio/mpeg" length="123"/>
+    </item>
+  </channel>
+</rss>
