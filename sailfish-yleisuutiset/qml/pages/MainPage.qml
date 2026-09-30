@@ -60,7 +60,7 @@ Page {
 
             PageHeader {
                 title: page.news ? page.news.category.name : ""
-                description: "Y-News · " + (page.news ? page.news.category.english : "")
+                description: "Yleisuutiset · " + (page.news ? page.news.category.english : "")
             }
 
             // Category buttons, scrolled so the current one is visible.

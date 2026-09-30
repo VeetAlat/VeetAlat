@@ -30,7 +30,7 @@ CoverBackground {
             truncationMode: TruncationMode.Fade
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.highlightColor
-            text: cover.news ? "Y-News · " + cover.news.category.name : "Y-News"
+            text: cover.news ? "Yleisuutiset · " + cover.news.category.name : "Yleisuutiset"
         }
         Label {
             width: parent.width

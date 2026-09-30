@@ -1,4 +1,4 @@
-Name:       harbour-ynews
+Name:       harbour-yleisuutiset
 Summary:    Unofficial reader for Yle's news feeds
 Version:    1.0.0
 Release:    1

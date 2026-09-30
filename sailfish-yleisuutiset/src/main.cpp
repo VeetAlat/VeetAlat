@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     // Must match OrganizationName/ApplicationName in the desktop file:
     // Sailjail only lets the app write ~/.local/share/<org>/<app>.
     app->setOrganizationName(QStringLiteral("org.veetalat"));
-    app->setApplicationName(QStringLiteral("ynews"));
+    app->setApplicationName(QStringLiteral("yleisuutiset"));
 
     QScopedPointer<QQuickView> view(SailfishApp::createView());
 
@@ -24,14 +24,14 @@ int main(int argc, char *argv[])
     QDir().mkpath(storage);
     view->engine()->setOfflineStoragePath(storage);
 
-    // Test hooks, unused in normal runs: YNEWS_FEED_BASE points the app at
-    // local fixture feeds, YNEWS_NO_WINDOW runs it without showing a window
+    // Test hooks, unused in normal runs: YLEISUUTISET_FEED_BASE points the app at
+    // local fixture feeds, YLEISUUTISET_NO_WINDOW runs it without showing a window
     // (the SDK has no GPU) so its event loop can still fetch.
     view->rootContext()->setContextProperty(QStringLiteral("feedBaseOverride"),
-                                            QString::fromLocal8Bit(qgetenv("YNEWS_FEED_BASE")));
+                                            QString::fromLocal8Bit(qgetenv("YLEISUUTISET_FEED_BASE")));
 
     view->setSource(SailfishApp::pathToMainQml());
-    if (!qEnvironmentVariableIsSet("YNEWS_NO_WINDOW")) {
+    if (!qEnvironmentVariableIsSet("YLEISUUTISET_NO_WINDOW")) {
         view->show();
     }
 

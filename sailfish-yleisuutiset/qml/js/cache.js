@@ -9,7 +9,7 @@ var db = null
 
 function open() {
     if (db) return db
-    db = Sql.LocalStorage.openDatabaseSync("YNews", "", "Y-News cache", 5000000)
+    db = Sql.LocalStorage.openDatabaseSync("Yleisuutiset", "", "Yleisuutiset cache", 5000000)
     db.transaction(function(tx) {
         tx.executeSql("CREATE TABLE IF NOT EXISTS feeds (key TEXT PRIMARY KEY, fetched REAL, json TEXT)")
         tx.executeSql("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")

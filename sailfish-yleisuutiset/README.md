@@ -1,4 +1,4 @@
-# Y-News for Sailfish OS
+# Yleisuutiset for Sailfish OS
 
 An unofficial Sailfish OS reader for **Yle**, Finland's public broadcaster.
 It shows the top stories from yle.fi's front page and every news category,
@@ -43,13 +43,13 @@ feed list.
 
 The app talks to feeds.yle.fi and Yle's image server, nothing else. It runs
 sandboxed (Sailjail) with only the Internet permission, and keeps its cache
-in `~/.local/share/org.veetalat/ynews/`.
+in `~/.local/share/org.veetalat/yleisuutiset/`.
 
 ## Building and installing
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/harbour-ynews-1.0.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/harbour-yleisuutiset-1.0.0-1.aarch64.rpm
 ```
 
 ## Tests
