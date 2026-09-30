@@ -110,6 +110,10 @@ QtObject {
             check("latest BMI is 26.8, overweight",
                   Bmi.formatBmi(s.currentBmi) === "26.8" && s.currentCategory.key === "over")
 
+            // The home screen cover shows the newest weight and its date.
+            check("cover shows the latest weight", cover.latestWeightText === "181.5 lb")
+            check("cover shows its date", cover.latestDateText !== "")
+
             check("delete works", s.removeEntry(s.entries[0].id) && s.entries.length === 1)
 
             // About and disclaimers, opened the way the menu opens it.

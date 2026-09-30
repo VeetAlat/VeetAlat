@@ -1,6 +1,6 @@
 Name:       harbour-bmitracker
 Summary:    Track your weight and body mass index
-Version:    1.2.0
+Version:    1.3.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat

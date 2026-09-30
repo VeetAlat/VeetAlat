@@ -13,7 +13,7 @@ index over time.
   the chart to see a measurement.
 - Everything is **saved on the phone** and is there again the next time you
   open the app.
-- The cover shows your latest BMI, and its **+** button opens "Add weight".
+- The home screen cover shows the app name and your latest weight with its date, over a faint scale gauge; its **+** button opens "Add weight".
 - **About and disclaimers** in the pull-down menu: not medical advice, made
   with AI-assisted tools (Claude Code), non-profit and private, and a
   **Delete all my data** button.
@@ -79,7 +79,7 @@ lands in `RPMS/`.
 With Developer mode on, copy the RPM to the phone and run:
 
 ```sh
-devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.2.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/harbour-bmitracker-1.3.0-1.aarch64.rpm
 ```
 
 (or `devel-su rpm -U …` if pkcon refuses an unsigned package).
