@@ -1,0 +1,8 @@
+# qmake / mb2 build output
+Makefile
+*.o
+moc_*.cpp
+/neonrider
+documentation.list
+.qmake.stash
+RPMS/

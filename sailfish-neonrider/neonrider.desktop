@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Neon Rider
+Comment=Ride a neon bike through a tunnel, on the floor, walls and roof
+Icon=neonrider
+Exec=neonrider
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Sandboxed with no extra permissions: the game only writes its own data
+# directory, ~/.local/share/org.veetalat/neonrider.
+Permissions=
+OrganizationName=org.veetalat
+ApplicationName=neonrider
