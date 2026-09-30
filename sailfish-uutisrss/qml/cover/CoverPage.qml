@@ -10,6 +10,9 @@ CoverBackground {
     property int shown: 0
 
     readonly property var items: news ? news.items : []
+    // Date and time of the headline on show, e.g. "30.9. 14:05".
+    readonly property string articleTime: article && isFinite(article.date)
+        ? Qt.formatDateTime(new Date(article.date), "d.M. HH:mm") : ""
     readonly property var article: items.length > 0 ? items[shown % Math.min(items.length, 5)] : null
 
     Timer {
@@ -40,6 +43,14 @@ CoverBackground {
             font.pixelSize: Theme.fontSizeSmall
             textFormat: Text.PlainText
             text: cover.article ? cover.article.title : (cover.news && cover.news.loading ? "Loading…" : "No news")
+        }
+        Label {
+            width: parent.width
+            visible: text !== ""
+            truncationMode: TruncationMode.Fade
+            font.pixelSize: Theme.fontSizeExtraSmall
+            color: Theme.secondaryColor
+            text: cover.articleTime
         }
     }
 

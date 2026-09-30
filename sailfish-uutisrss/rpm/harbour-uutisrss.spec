@@ -1,6 +1,6 @@
 Name:       harbour-uutisrss
 Summary:    Unofficial app for Yle's news headlines
-Version:    1.0.0
+Version:    1.1.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat

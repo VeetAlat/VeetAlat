@@ -23,6 +23,13 @@ Page {
         onTriggered: page.now = Date.now()
     }
 
+    // A new category (from the buttons or the Categories page) starts from
+    // its first headline.
+    Connections {
+        target: page.news
+        onCategoryKeyChanged: list.toTop()
+    }
+
     // Fetch when the app comes back to the foreground with old news.
     Connections {
         target: Qt.application
@@ -33,6 +40,15 @@ Page {
     // Tests set this to see where a tap would go instead of opening the browser.
     property var openLink: function(link) { Qt.openUrlExternally(link) }
 
+    // True while the list shows its very top (header included).
+    readonly property bool atTop: list.atYBeginning
+
+    // The first two headlines are "hot" while they're fresh (under six
+    // hours old), so old saved headlines read offline don't claim it.
+    function isHot(index, article) {
+        return index < 2 && isFinite(article.date) && page.now - article.date < 6 * 3600000
+    }
+
     function openCategories() {
         pageStack.push(Qt.resolvedUrl("CategoriesPage.qml"), { news: page.news })
     }
@@ -41,6 +57,18 @@ Page {
         id: list
         anchors.fill: parent
         model: page.news ? page.news.items : []
+
+        // Stay at the very top until the user scrolls away. The header's
+        // status line changes length when headlines load ("Loading…" ->
+        // two lines), which grows the header upwards; without this the
+        // list kept its old position and opened with its top cut off.
+        property bool stickToTop: true
+        onMovementEnded: stickToTop = atYBeginning
+        onOriginYChanged: if (stickToTop && !moving) contentY = originY
+        function toTop() {
+            stickToTop = true
+            contentY = originY
+        }
 
         PullDownMenu {
             busy: page.news !== null && page.news.loading
@@ -122,6 +150,7 @@ Page {
         delegate: ArticleItem {
             article: modelData
             leading: index === 0
+            hot: page.isHot(index, modelData)
             now: page.now
             onOpenRequested: page.openLink(link)
         }

@@ -25,7 +25,12 @@ Made by Valatalo.
 - **Works offline:** the headlines of every category you open are saved on
   the phone, so the app starts instantly and shows the last headlines
   without a connection.
-- **Cover:** rotates the latest headlines, with refresh and next buttons.
+- **Hot news:** the first two headlines are bold and marked "Hot 🔥" while
+  they're under six hours old.
+- **Cover:** rotates the latest headlines with each one's date and time, with
+  refresh and next buttons.
+- **Icon:** a newspaper front page with the UutisRSS logo, drawn by
+  `icons/make-icon.py` ("Uutis" over "RSS", the t and R sharing one stem).
 - **About and disclaimers** in the pull-down menu.
 
 ## Following Yle's RSS terms
@@ -42,7 +47,7 @@ UutisRSS:
 - **opens every headline straight on yle.fi**, in the browser. There is no
   in-app copy of the story;
 - **is free and non-profit**, with no ads or paid features;
-- **lets you delete all saved headlines** (About → Delete saved headlines),
+- **lets you delete all fetched headlines** (About → Delete fetched headlines),
   since Yle may ask users to delete the content;
 - **fetches politely:** only while the app is open, at most every five
   minutes per category unless you pull to refresh.
@@ -55,7 +60,7 @@ photo.
 
 UutisRSS runs only on your device: no account, tracking, analytics or
 servers of its own. Its only connection is to feeds.yle.fi. It runs sandboxed
-(Sailjail) with only the Internet permission, and keeps its saved headlines
+(Sailjail) with only the Internet permission, and keeps the headlines it fetches
 in `~/.local/share/org.veetalat/uutisrss/`.
 
 ## Made with AI-assisted tools
@@ -83,7 +88,7 @@ page then shows a "More apps on OpenRepos" button under "Made by Valatalo".
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/harbour-uutisrss-1.0.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/harbour-uutisrss-1.1.0-1.aarch64.rpm
 ```
 
 ## Tests
@@ -107,5 +112,5 @@ Sailfish's own Qt and Silica. It checks:
 - the About page is complete;
 - errors keep the headlines visible;
 - the category is remembered after a restart;
-- saved headlines show before any fetch;
-- deleting saved headlines empties the storage.
+- fetched headlines show before any new fetch;
+- deleting fetched headlines empties the storage.

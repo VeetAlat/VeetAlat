@@ -86,15 +86,29 @@ Page {
                 color: Theme.secondaryHighlightColor
                 text: "The app is non-profit. It runs only on your device: no account, "
                       + "no tracking, no analytics and no servers of its own. The only "
-                      + "connection it makes is to fetch Yle's RSS feeds. The headlines "
-                      + "it saves for offline reading stay on your phone, and you can "
-                      + "delete them here at any time."
+                      + "connection it makes is to fetch Yle's RSS feeds."
+            }
+
+            SectionHeader { text: "Fetched headlines" }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                text: "The headlines the app fetches from Yle (only the headline, its "
+                      + "time, category and link) are kept on your phone so the app opens "
+                      + "instantly and works offline. Nothing else is stored, and they never "
+                      + "leave your phone. Yle's RSS terms say fetched content must be "
+                      + "deleted if Yle asks; this button deletes all of it at once. The app "
+                      + "fetches fresh headlines the next time it opens a category."
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 preferredWidth: Theme.buttonWidthLarge
                 enabled: !page.cleared
-                text: page.cleared ? "Saved headlines deleted" : "Delete saved headlines"
+                text: page.cleared ? "Fetched headlines deleted" : "Delete fetched headlines"
                 onClicked: {
                     page.news.clearSaved()
                     page.cleared = true

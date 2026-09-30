@@ -84,6 +84,7 @@ Item {
                 if (smoke.secondRun) {
                     smoke.check("last category remembered", n.categoryKey === "kotimaa")
                     smoke.check("cached headlines shown at start", n.items.length === 2 && n.fromCache)
+                    smoke.check("list starts at the very top", smoke.page.atTop)
                     smoke.check("cache holds headlines only", smoke.headlinesOnly(n.items))
                     smoke.check("fresh cache isn't fetched again", !n.loading)
                     n.select("main")
@@ -115,6 +116,17 @@ Item {
                 smoke.check("headline text", n.items.length > 0 && n.items[0].title.indexOf("Hallitus esittää") === 0)
                 smoke.check("photos and summaries dropped, headlines only", smoke.headlinesOnly(n.items))
                 smoke.check("live headlines, not cache", !n.fromCache && n.fetched > 0)
+                smoke.check("list is scrolled to the very top after loading", smoke.page.atTop)
+                // "Hot": the first two headlines, while under six hours old.
+                var fresh = { date: Date.now() - 3600000 }, stale = { date: Date.now() - 8 * 3600000 }
+                smoke.check("first two fresh headlines are hot",
+                            smoke.page.isHot(0, fresh) && smoke.page.isHot(1, fresh))
+                smoke.check("third headline isn't hot", !smoke.page.isHot(2, fresh))
+                smoke.check("old headlines aren't hot", !smoke.page.isHot(0, stale))
+                // The cover shows each headline's date and time, e.g. "30.9. 12:03".
+                var cover = smoke.testedWindow.cover.createObject(smoke, { news: n })
+                smoke.check("cover shows date and time",
+                            /^\d{1,2}\.\d{1,2}\. \d{2}:\d{2}$/.test(cover.articleTime))
                 break
             case 1:
                 var rows = smoke.headlineRows(smoke.page, [])
