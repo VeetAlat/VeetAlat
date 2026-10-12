@@ -1,0 +1,35 @@
+module Sailfish.Silica
+ApplicationWindow 1.0 ApplicationWindow.qml
+Page 1.0 Page.qml
+Dialog 1.0 Dialog.qml
+SilicaFlickable 1.0 SilicaFlickable.qml
+SilicaListView 1.0 SilicaListView.qml
+PullDownMenu 1.0 Menu.qml
+PushUpMenu 1.0 Menu.qml
+ContextMenu 1.0 Menu.qml
+MenuItem 1.0 MenuItem.qml
+PageHeader 1.0 PageHeader.qml
+DialogHeader 1.0 PageHeader.qml
+Label 1.0 Label.qml
+ListItem 1.0 ListItem.qml
+ViewPlaceholder 1.0 ViewPlaceholder.qml
+VerticalScrollDecorator 1.0 Plain.qml
+ButtonLayout 1.0 ButtonLayout.qml
+Button 1.0 Button.qml
+SectionHeader 1.0 SectionHeader.qml
+BackgroundItem 1.0 BackgroundItem.qml
+DetailItem 1.0 DetailItem.qml
+RemorsePopup 1.0 RemorsePopup.qml
+BusyIndicator 1.0 BusyIndicator.qml
+Slider 1.0 Slider.qml
+TextField 1.0 TextField.qml
+TextArea 1.0 TextField.qml
+TextSwitch 1.0 TextSwitch.qml
+ComboBox 1.0 ComboBox.qml
+CoverBackground 1.0 CoverBackground.qml
+singleton Theme 1.0 Theme.qml
+singleton PageStatus 1.0 PageStatus.qml
+singleton TruncationMode 1.0 TruncationMode.qml
+singleton BusyIndicatorSize 1.0 BusyIndicatorSize.qml
+singleton Cover 1.0 Cover.qml
+singleton Clipboard 1.0 Clipboard.qml

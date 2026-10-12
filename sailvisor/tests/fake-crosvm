@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""Minimal stand-in for crosvm used by tests/test_backend.sh on machines without GenieZone."""
+import os
+import signal
+import socket
+import sys
+import threading
+import time
+
+args = sys.argv[1:]
+while args and args[0].startswith("--"):
+    args = args[2:] if args[0] == "--log-level" else args[1:]
+cmd = args[0] if args else ""
+
+
+def log(msg):
+    sys.stderr.write("[%s INFO  fake-crosvm] %s\n" % (time.strftime("%H:%M:%S"), msg))
+    sys.stderr.flush()
+
+
+if cmd == "version":
+    print("crosvm 0.1.0-fake")
+    sys.exit(0)
+
+if cmd == "stop":
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(args[1])
+    s.sendall(b"stop")
+    s.close()
+    sys.exit(0)
+
+if cmd != "run":
+    sys.exit(35)
+
+FLAGS = {"--disable-sandbox", "--no-pmu", "--no-rng", "--no-usb"}
+opts, rest = {}, args[1:]
+while rest and rest[0].startswith("--"):
+    if rest[0] in FLAGS:
+        opts[rest.pop(0)] = True
+    else:
+        opts[rest[0]] = rest[1]
+        rest = rest[2:]
+serial = dict(kv.split("=", 1) for kv in opts["--serial"].split(",") if "=" in kv)
+params = opts.get("--params", "")
+if "fail-early" in params:
+    log("ERROR crosvm: failed to open GenieZone device /dev/gzvm: No such file or directory")
+    sys.exit(1)
+
+console = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+console.connect(serial["path"])
+ctl = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+ctl.bind(opts["--socket"])
+ctl.listen(1)
+log("vm started, kernel %s" % args[-1])
+
+
+def out(text):
+    console.sendall((text + "\r\n").encode())
+
+
+def wait_stop():
+    c, _ = ctl.accept()
+    c.recv(16)
+    log("stop requested over control socket")
+    if "ignore-stop" in params:
+        log("ignoring stop request (test mode)")
+        return
+    out("[   9.999] reboot: Power down")
+    os._exit(0)
+
+
+def echo():
+    while True:
+        data = console.recv(1024)
+        if not data:
+            return
+        out("guest got: %s" % data.decode().strip())
+
+
+if "ignore-stop" in params:
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)  # forces the supervisor to escalate to SIGKILL
+threading.Thread(target=wait_stop, daemon=True).start()
+threading.Thread(target=echo, daemon=True).start()
+time.sleep(0.3)
+out("Hello from inside GenieZone on a Jolla!  (fake guest)")
+out("SAILVISOR_GUEST_READY mode=test")
+if "sailvisor.mode=poweroff" in params:
+    out("SAILVISOR_GUEST_POWEROFF")
+    time.sleep(0.2)
+    sys.exit(0)
+n = 0
+while True:
+    n += 1
+    out("heartbeat %d" % n)
+    time.sleep(0.5)

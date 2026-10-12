@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e88e5"/>
+      <stop offset="1" stop-color="#0d2b5c"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="120" fill="url(#bg)"/>
+  <!-- chip -->
+  <rect x="58" y="150" width="140" height="44" rx="8" fill="#0b1f40" stroke="#90caf9" stroke-width="6"/>
+  <g stroke="#90caf9" stroke-width="6" stroke-linecap="round">
+    <line x1="80" y1="194" x2="80" y2="210"/><line x1="106" y1="194" x2="106" y2="210"/>
+    <line x1="132" y1="194" x2="132" y2="210"/><line x1="158" y1="194" x2="158" y2="210"/>
+    <line x1="184" y1="194" x2="184" y2="210"/>
+  </g>
+  <!-- sail on the chip -->
+  <line x1="122" y1="44" x2="122" y2="150" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+  <path d="M130 50 L130 142 L196 142 Z" fill="#ffffff"/>
+  <path d="M114 70 L114 142 L66 142 Z" fill="#bbdefb"/>
+</svg>

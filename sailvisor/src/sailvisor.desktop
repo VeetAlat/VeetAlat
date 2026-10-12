@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Sailvisor
+Comment=Virtual machines on the GenieZone hypervisor
+Icon=sailvisor
+Exec=sailfish-qml sailvisor
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+Sandboxing=Disabled

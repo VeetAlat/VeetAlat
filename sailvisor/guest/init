@@ -1,0 +1,58 @@
+#!/bin/busybox sh
+# Sailvisor test guest - PID 1 inside the VM.
+# Kernel cmdline options:
+#   sailvisor.mode=heartbeat  (default) print a heartbeat every 5 s until stopped
+#   sailvisor.mode=poweroff   print the banner and power off (used by the self-test)
+#   sailvisor.mode=shell      drop to an interactive shell on the console
+
+/bin/busybox mkdir -p /proc /sys /dev /tmp /run /sbin /usr/bin /usr/sbin
+/bin/busybox --install -s
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null
+mount -t tmpfs tmpfs /tmp
+hostname sailvisor-guest
+
+mode=heartbeat
+for arg in $(cat /proc/cmdline); do
+    case "$arg" in
+        sailvisor.mode=*) mode="${arg#sailvisor.mode=}" ;;
+    esac
+done
+
+echo
+echo "=============================================================="
+echo "  Hello from inside GenieZone on a Jolla!  (Sailvisor guest)"
+echo "=============================================================="
+echo "kernel : $(uname -r) ($(uname -m))"
+echo "cpus   : $(grep -c ^processor /proc/cpuinfo)"
+echo "memory : $(awk '/MemTotal/ {print int($2/1024) " MiB"}' /proc/meminfo)"
+echo "uptime : $(cut -d' ' -f1 /proc/uptime) s since kernel start"
+echo "cmdline: $(cat /proc/cmdline)"
+echo "SAILVISOR_GUEST_READY mode=$mode"
+
+case "$mode" in
+    poweroff)
+        echo "SAILVISOR_GUEST_POWEROFF"
+        sync
+        poweroff -f
+        ;;
+    shell)
+        echo "Starting shell. Type 'poweroff -f' to shut the VM down."
+        while true; do
+            setsid cttyhack sh -l
+            echo "shell exited, restarting"
+        done
+        ;;
+    *)
+        n=0
+        while true; do
+            n=$((n + 1))
+            echo "heartbeat $n uptime=$(cut -d' ' -f1 /proc/uptime)s load=$(cut -d' ' -f1-3 /proc/loadavg)"
+            sleep 5
+        done
+        ;;
+esac
+
+# PID 1 must never exit
+while true; do sleep 3600; done
