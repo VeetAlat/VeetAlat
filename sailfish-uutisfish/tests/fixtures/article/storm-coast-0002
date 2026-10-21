@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<!-- An example of a site's browser check, written for the tests in the
+     usual shape of one (served with status 403, see the .status file). -->
+<html lang="en-US"><head><title>Just a moment...</title>
+<meta http-equiv="refresh" content="390"></head>
+<body><div class="main-wrapper"><div class="main-content"><noscript>Enable JavaScript and cookies to continue</noscript></div></div>
+<script>(function(){window._cf_chl_opt = { cType: 'managed' };})();</script>
+</body></html>

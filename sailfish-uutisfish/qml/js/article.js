@@ -454,6 +454,15 @@ function parseArticle(html, pageUrl) {
     return { title: title, lead: lead, published: published, image: image, blocks: out, source: source }
 }
 
+// True when a site answered with a check that only a web browser can pass
+// (Cloudflare's "Just a moment..." and the like) instead of the story.
+function articleBlocked(html, status) {
+    html = String(html || "")
+    if (/_cf_chl_opt|challenge-platform|cf-browser-verification|cf_captcha_kind/i.test(html)) return true
+    return (status === 403 || status === 429 || status === 503)
+            && /<title>\s*(Just a moment|Attention Required|Access denied)/i.test(html)
+}
+
 // A short report on how a page is built, for when its story can't be found:
 // what the app got, which tags and embedded data it has, where long texts
 // sit in that data, and the markup around the lead. Texts are cut short.
@@ -465,6 +474,7 @@ function articleReport(html, pageUrl, status) {
         return tag + " " + (m ? m.length : 0)
     }
     lines.push("title: " + articleMeta(html, "og:title"))
+    if (articleBlocked(html, status)) lines.push("blocked: a check only web browsers can pass")
     lines.push("tags: " + ["article", "main", "section", "p", "h2", "figure", "img", "div", "span", "script"].map(count).join(", "))
 
     var re = /<script([^>]*)>([\s\S]*?)<\/script\s*>/gi, m, scripts = []

@@ -183,6 +183,15 @@ check("headings that are only links are left out", !ap.blocks.some(b => b.text =
 check("a story doesn't end on a subheading",
       types(parse(`<article>${[1, 2, 3].map(n => `<p>${para(n)}</p>`).join("")}<h2>Lue myös</h2></article>`)) === "text,text,text")
 
+// 14. A site's browser check instead of the story (an example in the
+// usual shape of one, answered with 403).
+const check403 = fs.readFileSync(path.join(__dirname, "fixtures/article/storm-coast-0002"), "utf8")
+check("a browser check is recognised", ctx.articleBlocked(check403, 403))
+check("a browser check by its title alone", ctx.articleBlocked("<html><head><title>Just a moment...</title></head></html>", 403))
+check("an ordinary missing page isn't one", !ctx.articleBlocked("<html><body><h1>Not found</h1></body></html>", 404))
+check("a story page isn't one", !ctx.articleBlocked(page, 200))
+check("the page report says so", /blocked: a check only web browsers can pass/.test(ctx.articleReport(check403, "https://apnews.com/x", 403)))
+
 // 12. The page report for fixing the reader.
 const report = ctx.articleReport(`<html><head><meta property="og:description" content="Vain ingressi."></head><body><h1>Otsikko</h1><p>Vain ingressi.</p>
 <script id="__NEXT_DATA__" type="application/json">${JSON.stringify(next)}</script></body></html>`, "https://www.mtvuutiset.fi/artikkeli/x/1", 200)

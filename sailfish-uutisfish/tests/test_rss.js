@@ -91,10 +91,19 @@ check("base can be overridden, keeping the feed's path",
 check("every source has its colour, site and home page",
       F.sources.every(src => /^#[0-9a-f]{6}$/.test(src.color) && src.site && /^https:\/\//.test(src.home)))
 
+// Links lose the tracking tags feeds add.
+check("utm tags dropped", R.cleanLink("https://apnews.com/article/x-1?utm_source=flipboard&utm_content=AP%2Fmag") === "https://apnews.com/article/x-1")
+check("other query kept", R.cleanLink("https://a.example/p?id=5&utm_medium=rss&page=2#top") === "https://a.example/p?id=5&page=2#top")
+check("plain link unchanged", R.cleanLink("https://yle.fi/a/74-1") === "https://yle.fi/a/74-1")
+check("Yle's feed query untouched", R.cleanLink("https://feeds.yle.fi/uutiset/v1/recent.rss?publisherIds=YLE_UUTISET&concepts=18-34837")
+      === "https://feeds.yle.fi/uutiset/v1/recent.rss?publisherIds=YLE_UUTISET&concepts=18-34837")
+
 // AP's feed (example) parses too.
 const apFeed = R.parse(fixture("@associatedpress/top-stories-u7govdf1z.rss"))
 check("AP feed: three stories linking to apnews.com",
       apFeed.items.length === 3 && apFeed.items.every(i => i.link.indexOf("https://apnews.com/") === 0))
+check("AP feed: Flipboard's tracking tags dropped from links",
+      apFeed.items[0].link === "https://apnews.com/article/city-council-budget-0001")
 check("AP feed: photo from <media:content>", apFeed.items[0].image === "https://kuvat.example/ap/1.jpg")
 
 check("ES5 only (no let/const/arrow/template)",

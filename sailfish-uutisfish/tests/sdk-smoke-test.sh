@@ -32,8 +32,22 @@ grep -h -o "http://127.0.0.1:$PORT/[^\"<]*\.jpg" "$WORK/www" -r | sort -u | whil
     cp "$HERE/icons/172x172/uutisfish.png" "$file" # Qt reads the format from the content
 done
 
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WORK/www" \
-    > "$WORK/http.log" 2>&1 &
+# Like "python3 -m http.server", but a page with a <name>.status file next
+# to it is answered with that status (a site's browser check is a 403).
+cat > "$WORK/serve.py" <<'SERVE'
+import functools, http.server, os, sys
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def send_response(self, code, message=None):
+        path = self.translate_path(self.path)
+        if code == 200 and os.path.isfile(path + ".status"):
+            code = int(open(path + ".status").read())
+        super().send_response(code, message)
+
+http.server.ThreadingHTTPServer(("127.0.0.1", int(sys.argv[1])),
+    functools.partial(Handler, directory=sys.argv[2])).serve_forever()
+SERVE
+python3 "$WORK/serve.py" "$PORT" "$WORK/www" > "$WORK/http.log" 2>&1 &
 SERVER=$!
 trap 'kill $SERVER 2> /dev/null; rm -rf "$WORK"' EXIT
 

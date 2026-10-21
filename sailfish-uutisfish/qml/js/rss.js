@@ -130,6 +130,16 @@ function parseDate(s) {
     return NaN
 }
 
+// A link without the tracking tags feeds add (utm_source=... and the like).
+function cleanLink(link) {
+    var m = /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(String(link || ""))
+    if (!m || !m[2]) return String(link || "")
+    var kept = m[2].substring(1).split("&").filter(function(p) {
+        return p !== "" && !/^(utm_[a-z]+|fbclid|gclid|ocid)=/i.test(p)
+    })
+    return m[1] + (kept.length > 0 ? "?" + kept.join("&") : "") + (m[3] || "")
+}
+
 // { title, items: [{ title, link, summary, date, image, categories, id }] }
 // Throws Error("…") if the text isn't an RSS feed at all.
 function parse(xml) {
@@ -145,7 +155,7 @@ function parse(xml) {
     for (var i = 0; i < raw.length; i++) {
         var it = raw[i]
         var title = text(element(it, "title"))
-        var link = text(element(it, "link"))
+        var link = cleanLink(text(element(it, "link")))
         if (!title && !link) continue
         var descHtml = text(element(it, "description"))
         var cats = elements(it, "category")

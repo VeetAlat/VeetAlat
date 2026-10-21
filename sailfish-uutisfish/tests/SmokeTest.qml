@@ -8,7 +8,8 @@ import Sailfish.Silica 1.0
 // Run 1 starts on the home page and goes through all three sources: Yle
 // (headlines, a story with its text and photos, a missing story, another
 // category, a feed error), MTV Uutiset (a story built from the page's
-// data) and AP News (a story in plain <div>s). It ends on AP.
+// data) and AP News (a story in plain <div>s, and stories whose site
+// answers with a browser check). It ends on AP.
 // Run 2 (a restart) checks the last category is remembered, the home page
 // shows each source's saved headline, each source reopens on the category
 // last read there, and "Delete saved news" empties the cache.
@@ -292,6 +293,24 @@ Item {
             case 11:
                 if (!smoke.ready(smoke.pictures(smoke.storyPage, true) >= 1, "AP story photo loaded")) break
                 smoke.check("AP story's photo loads", smoke.pictures(smoke.storyPage, true) === 1)
+                smoke.check("AP story's link without Flipboard's tracking tags",
+                            smoke.storyPage.story.link === "https://apnews.com/article/city-council-budget-0001")
+                stack.pop(null, PageStackAction.Immediate)
+                // This story's page answers with a browser check (403).
+                smoke.storyPage = smoke.page.read(n.items[1])
+                break
+            case 12:
+                var spb = smoke.storyPage
+                if (!smoke.ready(!spb.loading && !stack.busy, "blocked AP story answered")) break
+                smoke.check("a browser check is told apart from an error", spb.blocked && spb.error === "")
+                smoke.check("and the feed's headline and summary show instead",
+                            spb.title === n.items[1].title && spb.lead === "Forecasters expect more rain on Wednesday.")
+                smoke.check("the site is remembered as blocked", n.isBlocked("apnews.com"))
+                smoke.check("Yle isn't", !n.isBlocked("yle.fi"))
+                stack.pop(null, PageStackAction.Immediate)
+                smoke.storyPage = smoke.page.read(n.items[2])
+                smoke.check("the next AP story shows its summary at once, without a fetch",
+                            smoke.storyPage.blocked && !smoke.storyPage.loading && smoke.storyPage._status === 0)
                 smoke.finish()
                 break
             }

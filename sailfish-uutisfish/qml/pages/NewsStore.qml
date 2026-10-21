@@ -49,6 +49,15 @@ QtObject {
         _articles[link] = article
         while (_articleOrder.length > 30) delete _articles[_articleOrder.shift()]
     }
+    // Sites that answered the reader with a browser check, this session:
+    // their stories then show the feed's summary at once.
+    property var _blockedSites: ({})
+    function isBlocked(site) { return _blockedSites.hasOwnProperty(site) }
+    function markBlocked(site, blocked) {
+        if (blocked) _blockedSites[site] = true
+        else delete _blockedSites[site]
+    }
+
     function forgetArticle(link) {
         delete _articles[link]
         var i = _articleOrder.indexOf(link)

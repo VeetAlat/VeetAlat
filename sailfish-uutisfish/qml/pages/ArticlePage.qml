@@ -33,6 +33,8 @@ Page {
     property string _html: ""
     property int _status: 0
     property bool reportCopied: false
+    // The site only lets web browsers open its stories.
+    property bool blocked: false
 
     function pageReport() {
         return Article.articleReport(_html, news ? news.articleUrl(story.link) : story.link, _status)
@@ -46,6 +48,11 @@ Page {
             article = cached
             return
         }
+        if (news && news.isBlocked(site)) {
+            blocked = true
+            return
+        }
+        blocked = false
         if (_request) _request.abort()
         var xhr = new XMLHttpRequest()
         _request = xhr
@@ -57,6 +64,12 @@ Page {
             timeout.stop()
             page._status = xhr.status
             page._html = xhr.responseText || ""
+            if (Article.articleBlocked(page._html, xhr.status)) {
+                page.loading = false
+                page.blocked = true
+                if (page.news) page.news.markBlocked(page.site, true)
+                return
+            }
             if (xhr.status !== 200) {
                 page.loading = false
                 page.error = xhr.status === 0 ? "No connection to " + page.sourceName + "."
@@ -131,7 +144,7 @@ Page {
             MenuItem {
                 // For fixing the reader: how the page is built, to paste to its maker.
                 text: page.reportCopied ? "Page report copied" : "Copy page report"
-                visible: !page.loading && !page.hasText && page._status !== 0
+                visible: !page.loading && !page.hasText && !page.blocked && page._status !== 0
                 onClicked: {
                     Clipboard.text = page.pageReport()
                     page.reportCopied = true
@@ -142,7 +155,10 @@ Page {
                 visible: !page.loading
                 onClicked: {
                     page.article = null
-                    if (page.news) page.news.forgetArticle(page.story.link)
+                    if (page.news) {
+                        page.news.forgetArticle(page.story.link)
+                        page.news.markBlocked(page.site, false)
+                    }
                     page.load()
                 }
             }
@@ -208,10 +224,14 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeSmall
                 color: page.error !== "" ? Theme.errorColor : Theme.secondaryHighlightColor
-                text: (page.error !== "" ? page.error
-                                         : "The story's text couldn't be found on its page.")
-                      + " Pull down to load it again or open it on " + page.site + ", or to copy "
-                      + "a report on the page for fixing UutisFish."
+                text: page.blocked
+                      ? page.site + " only lets web browsers open its stories, so UutisFish can "
+                        + "show just the summary from the feed. Open it on " + page.site
+                        + " for the whole story."
+                      : (page.error !== "" ? page.error
+                                           : "The story's text couldn't be found on its page.")
+                        + " Pull down to load it again or open it on " + page.site + ", or to copy "
+                        + "a report on the page for fixing UutisFish."
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter

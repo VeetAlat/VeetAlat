@@ -1,6 +1,6 @@
 Name:       uutisfish
 Summary:    Yle, MTV Uutiset and AP News, whole stories and photos, in one app
-Version:    0.1.0
+Version:    0.1.1
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -43,6 +43,13 @@ desktop-file-install --delete-original \
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Wed Oct 21 2026 Valatalo - 0.1.1-1
+- AP News only lets web browsers open its stories (a Cloudflare check), so
+  its stories now show the feed's summary and photo with a clear note and
+  a button to open them on apnews.com, instead of "error 403". The block is
+  remembered for the session, so the next AP story opens at once.
+- Feed links lose the tracking tags (utm_...) Flipboard adds.
+
 * Wed Oct 21 2026 Valatalo - 0.1.0-1
 - First version: YleFish and MTVFish in one app, with AP News added, and
   a home page with a tile for each source.

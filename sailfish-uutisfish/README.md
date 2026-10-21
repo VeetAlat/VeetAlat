@@ -38,7 +38,7 @@ article data for search engines or the data a page built with JavaScript
 carries (how MTV's pages work). Links to other stories are left out.
 
 Pull down on a story to open it on its site, copy its link or load it
-again. If a story's text isn't found, **Copy page report** copies a short
+again. Feed links lose the tracking tags some feeds add (`utm_...`). If a story's text isn't found, **Copy page report** copies a short
 description of how its page is built, to paste to whoever fixes the
 reader.
 
@@ -46,11 +46,13 @@ The rest is as in YleFish and MTVFish: headlines saved for offline
 reading and a quick start, "Hot 🔥" on fresh top headlines, the last 30
 stories kept in memory, and a cover with the latest headlines.
 
-> **AP is the new one.** The AP feeds' addresses come from feed directories
-> and AP's story pages couldn't be reached while building, so AP has only
-> been tested on example pages. If an AP category shows an error, its
-> feed's address has changed; if an AP story shows only its summary, use
-> Copy page report.
+> **AP's stories open as their summary.** AP's headlines work, but
+> apnews.com answers anything that isn't a web browser with a Cloudflare
+> check ("Just a moment...") instead of the story, and UutisFish doesn't
+> try to get around it. So an AP story shows the feed's headline, summary
+> and photo, says why, and has a button to read it on apnews.com. The app
+> remembers this for the session, so the next AP story opens at once;
+> "Load again" tries the site again.
 
 ## For personal use only
 
@@ -84,7 +86,7 @@ page's colours, drawn by `icons/make-icon.py`.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/uutisfish-0.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/uutisfish-0.1.1-1.aarch64.rpm
 ```
 
 UutisFish installs next to YleFish and MTVFish; they don't share anything,
@@ -102,7 +104,9 @@ The smoke test serves example feeds and story pages for all three sources
 and runs the app twice on Sailfish's own Qt and Silica. Run 1 starts on
 the home page and goes through Yle (headlines, a story with its text and
 photos, a missing story, another category, a feed error), MTV Uutiset (a
-story built from the page's data) and AP News (a story in plain `<div>`s).
+story built from the page's data) and AP News (a story in plain `<div>`s,
+and stories whose site answers with a browser check: the test server
+answers a page with a `.status` file next to it with that status).
 Run 2 checks the last category is remembered, the home page shows each
 source's saved headline, each source reopens on its last category, and
 deleting saved news empties everything.
