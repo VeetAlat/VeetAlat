@@ -1,0 +1,12 @@
+<!doctype html>
+<!-- An example story page for the smoke test, in the shape of a page built
+     with JavaScript (Next.js): the story is in the page's data. Not a copy of MTV's pages. -->
+<html lang="fi"><head><meta charset="utf-8">
+<meta property="og:title" content="Helsingissä avattiin uusi metroasema">
+<meta property="og:description" content="Asema palvelee noin 20 000 matkustajaa päivässä.">
+<meta property="og:image" content="https://kuvat.example/mtv/1.jpg">
+<meta property="article:published_time" content="2026-09-30T11:20:00+03:00">
+</head><body><div id="__next"><h1>Helsingissä avattiin uusi metroasema</h1>
+<p>Asema palvelee noin 20 000 matkustajaa päivässä.</p></div>
+<script id="__NEXT_DATA__" type="application/json">{"props": {"pageProps": {"related": [{"title": "Muu juttu", "lead": "Ei tätä", "url": "/artikkeli/muu/1"}, {"title": "Kolmas juttu", "lead": "Eikä tätä", "url": "/artikkeli/kolmas/2"}], "article": {"title": "Helsingissä avattiin uusi metroasema", "body": [{"type": "paragraph", "children": [{"text": "Kappale 1 uudesta metroasemast"}, {"text": "a, ja siinä on tarpeeksi tekstiä ollakseen oikea kappale uutisessa."}]}, {"type": "paragraph", "text": "Kappale 2 uudesta metroasemasta, ja siinä on tarpeeksi tekstiä ollakseen oikea kappale uutisessa."}, {"type": "heading", "text": "Mitä seuraavaksi?"}, {"type": "image", "image": {"url": "https://kuvat.example/mtv/2.jpg", "caption": "Asema avattiin aamulla."}}, {"type": "paragraph", "text": "Kappale 3 uudesta metroasemasta, ja siinä on tarpeeksi tekstiä ollakseen oikea kappale uutisessa."}, {"type": "ad", "id": "mainos-1"}, {"type": "paragraph", "text": "Kappale 4 uudesta metroasemasta, ja siinä on tarpeeksi tekstiä ollakseen oikea kappale uutisessa."}]}}}}</script>
+</body></html>

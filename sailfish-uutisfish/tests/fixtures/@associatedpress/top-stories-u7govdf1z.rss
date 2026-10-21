@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An example feed for the tests, in the shape of an RSS feed. Not a copy of AP's or Flipboard's. -->
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>AP Top Stories</title>
+    <link>https://flipboard.com/@associatedpress/top-stories-u7govdf1z</link>
+    <item>
+      <title>City council passes a budget after a long night of debate</title>
+      <link>https://apnews.com/article/city-council-budget-0001</link>
+      <description>The vote came just after 2 a.m.</description>
+      <pubDate>Tue, 30 Sep 2026 09:00:00 GMT</pubDate>
+      <guid isPermaLink="false">ap-0001</guid>
+      <media:content url="https://kuvat.example/ap/1.jpg" medium="image"/>
+    </item>
+    <item>
+      <title>Storm brings heavy rain to the coast</title>
+      <link>https://apnews.com/article/storm-coast-0002</link>
+      <description>Forecasters expect more rain on Wednesday.</description>
+      <pubDate>Tue, 30 Sep 2026 08:00:00 GMT</pubDate>
+      <guid isPermaLink="false">ap-0002</guid>
+    </item>
+    <item>
+      <title>Museum reopens after renovation</title>
+      <link>https://apnews.com/article/museum-reopens-0003</link>
+      <pubDate>Tue, 30 Sep 2026 07:00:00 GMT</pubDate>
+      <guid isPermaLink="false">ap-0003</guid>
+    </item>
+  </channel>
+</rss>

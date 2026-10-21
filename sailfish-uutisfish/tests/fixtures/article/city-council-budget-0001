@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- An example story page for the smoke test: the story in plain <div>s
+     inside <main>, with no <article>. Not a copy of AP's pages. -->
+<html lang="en"><head><meta charset="utf-8">
+<meta property="og:title" content="City council passes a budget after a long night of debate">
+<meta property="og:description" content="The vote came just after 2 a.m.">
+<meta property="og:image" content="https://kuvat.example/ap/1.jpg">
+<meta property="article:published_time" content="2026-09-30T09:00:00Z">
+</head><body>
+<header><nav><a href="/">Home</a></nav></header>
+<main>
+  <div class="Page-lead"><h1>City council passes a budget after a long night of debate</h1>
+  <figure><picture><source srcset="https://kuvat.example/ap/1-600.jpg 600w, https://kuvat.example/ap/1.jpg 1200w">
+  <img src="https://kuvat.example/ap/1-600.jpg" alt="Council chamber"></picture>
+  <figcaption>Council members vote on the budget. (AP Photo)</figcaption></figure></div>
+  <div class="RichTextStoryBody RichTextBody">
+    <p>The city council passed next year's budget early Tuesday after a debate that ran past midnight.</p>
+    <p>The plan adds money for buses and parks, and keeps property taxes at this year's level.</p>
+    <h2>What changes</h2>
+    <p>Bus routes will run every ten minutes during the day, starting in March, the council said.</p>
+    <p>Two new parks are planned, one by the river and one next to the new library downtown.</p>
+  </div>
+  <div class="PageList-items"><h3><a href="/article/x">Other story</a></h3></div>
+</main>
+<footer><p>Copyright example</p></footer>
+</body></html>

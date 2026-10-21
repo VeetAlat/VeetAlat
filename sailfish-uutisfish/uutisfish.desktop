@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=UutisFish
+Comment=Yle, MTV Uutiset and AP News, whole stories and photos, in one app
+Icon=uutisfish
+Exec=uutisfish
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Needs the network to fetch the news sources' feeds, stories and photos; writes only its own cache
+# in ~/.local/share/org.veetalat/uutisfish.
+Permissions=Internet
+OrganizationName=org.veetalat
+ApplicationName=uutisfish

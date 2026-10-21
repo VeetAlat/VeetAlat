@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An example feed for the tests, in the shape of an RSS feed. Not a copy of MTV's. -->
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>MTV Uutiset | Uutiset</title>
+    <link>https://www.mtvuutiset.fi/</link>
+    <item>
+      <title>Helsingissä avattiin uusi metroasema</title>
+      <link>https://www.mtvuutiset.fi/artikkeli/helsingissa-avattiin-uusi-metroasema/20000001</link>
+      <description>Asema palvelee noin 20 000 matkustajaa päivässä.</description>
+      <pubDate>Tue, 30 Sep 2026 11:20:00 +0300</pubDate>
+      <guid isPermaLink="false">20000001</guid>
+      <category>Kotimaa</category>
+      <enclosure url="https://kuvat.example/mtv/1.jpg" type="image/jpeg" length="0"/>
+    </item>
+    <item>
+      <title>Hirvikolari Kehä III:lla</title>
+      <link>https://www.mtvuutiset.fi/artikkeli/hirvikolari/20000002</link>
+      <description>Liikenne kulkee yhdellä kaistalla.</description>
+      <pubDate>Tue, 30 Sep 2026 10:05:00 +0300</pubDate>
+      <guid isPermaLink="false">20000002</guid>
+    </item>
+  </channel>
+</rss>
