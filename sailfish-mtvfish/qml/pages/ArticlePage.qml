@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../js/rss.js" as Rss
+import "../js/article.js" as Article
 
 // One whole story, read inside the app: headline, time, lead, photos with
 // their captions, subheadings and all the text. It shows the feed's
@@ -24,9 +25,19 @@ Page {
     allowedOrientations: Orientation.All
 
     property var _request: null
+    // What the story's address answered, kept only while its story isn't
+    // found, for "Copy page report".
+    property string _html: ""
+    property int _status: 0
+    property bool reportCopied: false
+
+    function pageReport() {
+        return Article.articleReport(_html, news ? news.articleUrl(story.link) : story.link, _status)
+    }
 
     function load() {
         error = ""
+        reportCopied = false
         var cached = news ? news.cachedArticle(story.link) : null
         if (cached) {
             article = cached
@@ -41,6 +52,8 @@ Page {
             if (xhr.readyState !== XMLHttpRequest.DONE || xhr !== page._request) return
             page._request = null
             timeout.stop()
+            page._status = xhr.status
+            page._html = xhr.responseText || ""
             if (xhr.status !== 200) {
                 page.loading = false
                 page.error = xhr.status === 0 ? "No connection to MTV Uutiset."
@@ -64,6 +77,7 @@ Page {
                 return
             }
             page.article = messageObject.article
+            if (page.hasText) page._html = ""
             if (page.news && page.hasText) page.news.keepArticle(page.story.link, page.article)
         }
     }
@@ -110,6 +124,15 @@ Page {
             MenuItem {
                 text: "Copy link"
                 onClicked: Clipboard.text = page.story.link
+            }
+            MenuItem {
+                // For fixing the reader: how the page is built, to paste to its maker.
+                text: page.reportCopied ? "Page report copied" : "Copy page report"
+                visible: !page.loading && !page.hasText && page._status !== 0
+                onClicked: {
+                    Clipboard.text = page.pageReport()
+                    page.reportCopied = true
+                }
             }
             MenuItem {
                 text: "Load again"
@@ -184,7 +207,8 @@ Page {
                 color: page.error !== "" ? Theme.errorColor : Theme.secondaryHighlightColor
                 text: (page.error !== "" ? page.error
                                          : "The story's text couldn't be found on its page.")
-                      + " Pull down to load it again or open it on mtvuutiset.fi."
+                      + " Pull down to load it again or open it on mtvuutiset.fi, or to copy "
+                      + "a report on the page for fixing MTVFish."
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter

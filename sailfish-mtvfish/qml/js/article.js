@@ -10,7 +10,8 @@
 // article markup (<article>, or failing that <main>): paragraphs,
 // subheadings, quotes, list items and <figure>s with their photos and
 // captions. When that gives too little, the text comes from the article
-// data most news pages embed for search engines (application/ld+json).
+// data most news pages embed for search engines (application/ld+json), or
+// from the data a page built with JavaScript carries (Next.js and the like).
 // The headline, lead, main photo and time come from the page's meta tags
 // or that same data.
 
@@ -143,18 +144,212 @@ function articleTime(s) {
     return t
 }
 
-// The part of the page that holds the story: the longest <article>, or
-// <main>, or the whole <body>.
-function articleRegion(html) {
-    var best = "", m
-    var re = /<article(\s[^>]*)?>([\s\S]*?)<\/article\s*>/gi
-    while ((m = re.exec(html)) !== null)
-        if (m[2].length > best.length) best = m[2]
-    if (best) return best
-    m = /<main(\s[^>]*)?>([\s\S]*?)<\/main\s*>/i.exec(html)
-    if (m) return m[2]
+// The inside of every <tag> element, nesting counted, so a story with
+// "read also" <article>s inside it isn't cut off at the first of them.
+function articleElements(html, tag) {
+    var re = new RegExp("<(\\/?)" + tag + "(\\s[^>]*)?>", "gi")
+    var open = [], out = [], m
+    while ((m = re.exec(html)) !== null) {
+        if (!m[1]) open.push(re.lastIndex)
+        else if (open.length > 0) out.push(html.substring(open.pop(), m.index))
+    }
+    return out
+}
+
+// The parts of the page that may hold the story, most likely first: each
+// <article>, then <main>, then the whole <body>.
+function articleRegions(html) {
+    var regions = { articles: articleElements(html, "article"), main: "", body: "" }
+    var m = articleElements(html, "main")
+    if (m.length > 0) regions.main = m[0]
     m = /<body(\s[^>]*)?>([\s\S]*)<\/body\s*>/i.exec(html)
-    return m ? m[2] : html
+    regions.body = m ? m[2] : html
+    return regions
+}
+
+// How much story there is in blocks: all the text, and how many
+// paragraphs are long enough to be real ones.
+function articleScore(blocks) {
+    var chars = 0, paragraphs = 0
+    for (var i = 0; i < blocks.length; i++) {
+        if (blocks[i].type === "image") continue
+        chars += blocks[i].text.length
+        if (blocks[i].type === "text" && blocks[i].text.length >= 40) paragraphs++
+    }
+    return { chars: chars, paragraphs: paragraphs }
+}
+
+function articleWeak(score) {
+    return score.paragraphs < 2 || score.chars < 400
+}
+
+// The story from the page's markup: the fullest <article> (with the ones
+// nested in it, usually links to other stories, left out), or <main> or
+// the <body> when no <article> has much.
+function articleFromMarkup(html, pageUrl) {
+    var regions = articleRegions(html)
+    var best = [], bestScore = { chars: -1, paragraphs: 0 }
+    function consider(region) {
+        region = region.replace(/<article(\s[^>]*)?>[\s\S]*?<\/article\s*>/gi, "")
+        var blocks = articleBlocks(articleClean(region), pageUrl)
+        var score = articleScore(blocks)
+        if (score.chars > bestScore.chars) { best = blocks; bestScore = score }
+    }
+    for (var i = 0; i < regions.articles.length; i++) consider(regions.articles[i])
+    if (articleWeak(bestScore) && regions.main) consider(regions.main)
+    if (articleWeak(bestScore)) consider(regions.body)
+    return best
+}
+
+// Plain text with blank lines (or line breaks) between paragraphs.
+function articleTextParts(text) {
+    var blocks = []
+    var parts = String(text).split(/\n\s*\n|\r?\n/)
+    for (var i = 0; i < parts.length; i++) {
+        var t = articleText(parts[i])
+        if (t) blocks.push({ type: "text", text: t })
+    }
+    return blocks
+}
+
+// The data many sites build their pages from with JavaScript, embedded in
+// the page: <script type="application/json"> (Next.js's __NEXT_DATA__
+// among them) and "window.__STATE__ = {...}" assignments.
+function articleScripts(html) {
+    var re = /<script([^>]*)>([\s\S]*?)<\/script\s*>/gi
+    var roots = [], m
+    while ((m = re.exec(html)) !== null) {
+        var attrs = m[1], body = m[2].trim()
+        if (body.length < 200 || /ld\+json/i.test(attrs)) continue
+        var json = ""
+        if (/application\/json/i.test(attrs)) {
+            json = body
+        } else {
+            var a = /^(?:window\.|self\.|var\s+|let\s+|const\s+)?[\w$.]+(?:\[["'][^"']+["']\])?\s*=\s*([\[{][\s\S]*[\]}])\s*;?\s*$/.exec(body)
+            if (a) json = a[1]
+            var q = /JSON\.parse\(\s*("(?:[^"\\]|\\.)*")\s*\)/.exec(body)
+            if (!json && q) {
+                try { json = JSON.parse(q[1]) } catch (e) { }
+            }
+        }
+        if (!json) continue
+        try { roots.push(JSON.parse(json)) } catch (e) { }
+    }
+    return roots
+}
+
+// The text of a block in the data: its own string, or its text, html or
+// content, or its pieces (the spans of a paragraph) put together.
+function articleDataRaw(node, depth) {
+    if (depth > 6 || node === null || node === undefined) return ""
+    if (typeof node === "string") return node
+    if (typeof node !== "object") return ""
+    if (node instanceof Array) {
+        var parts = []
+        for (var i = 0; i < node.length; i++) parts.push(articleDataRaw(node[i], depth + 1))
+        return parts.join("")
+    }
+    var keys = ["text", "html", "content", "value", "body", "children", "nodes", "spans"]
+    for (var k = 0; k < keys.length; k++) {
+        if (!node.hasOwnProperty(keys[k])) continue
+        var r = articleDataRaw(node[keys[k]], depth + 1)
+        if (r) return r
+    }
+    return ""
+}
+
+// A picture's address somewhere in a block of the data.
+function articleDataImage(node, pageUrl, depth) {
+    depth = depth || 0
+    if (depth > 4 || !node || typeof node !== "object") return ""
+    for (var k in node) {
+        if (!node.hasOwnProperty(k)) continue
+        var v = node[k]
+        if (typeof v === "string") {
+            if (/^(https?:)?\/\/|^\//i.test(v)
+                    && /\.(jpe?g|png|webp|avif)(\?|$)|\/(image|images|img|kuva|kuvat)\//i.test(v))
+                return articleAbsolute(v, pageUrl)
+        } else if (typeof v === "object") {
+            var found = articleDataImage(v, pageUrl, depth + 1)
+            if (found) return found
+        }
+    }
+    return ""
+}
+
+function articleDataCaption(node) {
+    var places = [node, node.image, node.media, node.data, node.picture]
+    var keys = ["caption", "alt", "description", "text"]
+    for (var p = 0; p < places.length; p++) {
+        var place = places[p]
+        if (!place || typeof place !== "object") continue
+        for (var k = 0; k < keys.length; k++) {
+            var v = place[keys[k]]
+            if (typeof v === "string" && v.length < 500) return articleText(v)
+        }
+    }
+    return ""
+}
+
+// A list in the data read as a story: each item a paragraph, subheading,
+// quote, list item or picture, by its own type where it says one.
+function articleDataList(list, pageUrl) {
+    var out = []
+    for (var i = 0; i < list.length; i++) {
+        var el = list[i]
+        if (typeof el === "string") {
+            if (/<(p|h[2-4]|blockquote|li|figure)[\s>]/i.test(el)) out = out.concat(articleBlocks(articleClean(el), pageUrl))
+            else if (el.length >= 40) out.push({ type: "text", text: articleText(el) })
+            continue
+        }
+        if (!el || typeof el !== "object" || el instanceof Array) continue
+        var kind = String(el.type || el._type || el.__typename || el.blockType || el.kind || "").toLowerCase()
+        var raw = articleDataRaw(el, 0)
+        if (/image|picture|photo|kuva|gallery/.test(kind) || !raw) {
+            var src = articleDataImage(el, pageUrl)
+            if (src) out.push({ type: "image", src: src, caption: articleDataCaption(el) })
+            continue
+        }
+        if (/<(p|h[2-4]|blockquote|li)[\s>]/i.test(raw)) {
+            out = out.concat(articleBlocks(articleClean(raw), pageUrl))
+            continue
+        }
+        var t = articleText(raw)
+        if (t.length < 2) continue
+        var type = /head|title|^h[2-4]$/.test(kind) ? "heading"
+                 : /quote/.test(kind) ? "quote"
+                 : /list|item|bullet/.test(kind) ? "item" : "text"
+        out.push({ type: type, text: t })
+    }
+    return out
+}
+
+// The fullest story anywhere in the page's embedded data, or null.
+function articleFromData(html, pageUrl) {
+    var roots = articleScripts(html)
+    var best = null, bestChars = 0, visited = 0
+    function consider(blocks) {
+        var score = articleScore(blocks)
+        if (score.paragraphs >= 2 && score.chars > bestChars) { best = blocks; bestChars = score.chars }
+    }
+    function walk(node, depth) {
+        if (++visited > 300000 || depth > 60 || node === null || node === undefined) return
+        if (typeof node === "string") {
+            if (node.length < 200) return
+            if (/<p[\s>]/i.test(node)) consider(articleBlocks(articleClean(node), pageUrl))
+            else if (/\n/.test(node)) consider(articleTextParts(node))
+            return
+        }
+        if (typeof node !== "object") return
+        if (node instanceof Array) {
+            if (node.length >= 2) consider(articleDataList(node, pageUrl))
+            for (var i = 0; i < node.length; i++) walk(node[i], depth + 1)
+            return
+        }
+        for (var k in node) if (node.hasOwnProperty(k)) walk(node[k], depth + 1)
+    }
+    for (var r = 0; r < roots.length; r++) walk(roots[r], 0)
+    return best
 }
 
 // Takes out what isn't the story: scripts, styles, navigation, share bars,
@@ -210,26 +405,29 @@ function parseArticle(html, pageUrl) {
     var image = articleAbsolute(articleMeta(html, "og:image") || articleLdImage(ld && ld.image), pageUrl)
     var published = articleTime(articleMeta(html, "article:published_time") || (ld && ld.datePublished) || "")
 
-    var blocks = articleBlocks(articleClean(articleRegion(html)), pageUrl)
-    var paragraphs = 0
-    for (var i = 0; i < blocks.length; i++) if (blocks[i].type === "text") paragraphs++
-
+    var blocks = articleFromMarkup(html, pageUrl)
+    var markup = articleScore(blocks)
     var source = "page"
-    if (paragraphs < 2 && ld && ld.articleBody) {
-        // Too little in the markup: the text from the embedded data, with
-        // whatever pictures the markup did have.
-        var pictures = []
-        for (var p = 0; p < blocks.length; p++) if (blocks[p].type === "image") pictures.push(blocks[p])
-        blocks = pictures
-        var parts = String(ld.articleBody).split(/\n\s*\n|\r?\n/)
-        for (var q = 0; q < parts.length; q++) {
-            var t = articleText(parts[q])
-            if (t) blocks.push({ type: "text", text: t })
+    if (articleWeak(markup)) {
+        // Little in the markup: the story from the article data for search
+        // engines, or the data the page is built from, whichever has more.
+        var alt = ld && ld.articleBody ? articleTextParts(ld.articleBody) : null
+        var built = articleFromData(html, pageUrl)
+        if (built && (!alt || articleScore(built).chars > articleScore(alt).chars)) alt = built
+        if (alt && articleScore(alt).chars > markup.chars) {
+            var hasPicture = false
+            for (var a = 0; a < alt.length; a++) if (alt[a].type === "image") hasPicture = true
+            if (!hasPicture) {
+                // Keep whatever pictures the markup did have.
+                var pictures = []
+                for (var p = 0; p < blocks.length; p++) if (blocks[p].type === "image") pictures.push(blocks[p])
+                alt = pictures.concat(alt)
+            }
+            blocks = alt
+            source = "data"
         }
-        source = "data"
-    } else if (paragraphs === 0) {
-        source = "none"
     }
+    if (source === "page" && markup.chars === 0) source = "none"
 
     // Not the headline or lead a second time, nor the same photo twice.
     var out = [], seen = {}
@@ -250,4 +448,74 @@ function parseArticle(html, pageUrl) {
         out.unshift({ type: "image", src: image, caption: "" })
 
     return { title: title, lead: lead, published: published, image: image, blocks: out, source: source }
+}
+
+// A short report on how a page is built, for when its story can't be found:
+// what the app got, which tags and embedded data it has, where long texts
+// sit in that data, and the markup around the lead. Texts are cut short.
+function articleReport(html, pageUrl, status) {
+    html = String(html || "")
+    var lines = ["MTVFish page report", "address: " + pageUrl, "status: " + status + ", " + html.length + " characters"]
+    function count(tag) {
+        var m = html.match(new RegExp("<" + tag + "[\\s>]", "gi"))
+        return tag + " " + (m ? m.length : 0)
+    }
+    lines.push("title: " + articleMeta(html, "og:title"))
+    lines.push("tags: " + ["article", "main", "section", "p", "h2", "figure", "img", "div", "span", "script"].map(count).join(", "))
+
+    var re = /<script([^>]*)>([\s\S]*?)<\/script\s*>/gi, m, scripts = []
+    while ((m = re.exec(html)) !== null) {
+        if (m[2].length < 500) continue
+        var id = articleAttr(m[0].substring(0, m[0].indexOf(">") + 1), "id")
+        var type = articleAttr(m[0].substring(0, m[0].indexOf(">") + 1), "type")
+        scripts.push((id || "-") + " " + (type || "js") + " " + Math.round(m[2].length / 1024) + " kB: "
+                     + m[2].trim().substring(0, 50).replace(/\s+/g, " "))
+    }
+    lines.push("big scripts: " + scripts.length)
+    for (var s = 0; s < scripts.length && s < 12; s++) lines.push("  " + scripts[s])
+
+    var ld = articleJsonLd(html)
+    lines.push("ld+json article: " + (ld ? String(ld["@type"]) + ", articleBody " + (ld.articleBody ? String(ld.articleBody).length : "none") : "none"))
+
+    // Where the long texts and lists are in the embedded data.
+    var roots = articleScripts(html), found = [], seen = 0
+    function walk(node, path, depth) {
+        if (found.length >= 25 || ++seen > 200000 || depth > 40 || node === null || node === undefined) return
+        if (typeof node === "string") {
+            if (node.length >= 120) found.push(path + " (" + node.length + "): " + node.substring(0, 50).replace(/\s+/g, " "))
+            return
+        }
+        if (typeof node !== "object") return
+        if (node instanceof Array) {
+            if (node.length >= 3 && node[0] && typeof node[0] === "object") {
+                var kinds = []
+                for (var i = 0; i < node.length && kinds.length < 6; i++) {
+                    var el = node[i] || {}
+                    kinds.push(String(el.type || el._type || el.__typename || Object.keys(el).slice(0, 3).join("/")))
+                }
+                found.push(path + "[" + node.length + "]: " + kinds.join(", "))
+            }
+            for (var j = 0; j < node.length; j++) walk(node[j], path + "[" + j + "]", depth + 1)
+            return
+        }
+        for (var k in node) if (node.hasOwnProperty(k)) walk(node[k], path + "." + k, depth + 1)
+    }
+    for (var r = 0; r < roots.length; r++) walk(roots[r], "data" + r, 0)
+    lines.push("embedded data: " + roots.length + (found.length ? ", long texts and lists:" : ""))
+    for (var f = 0; f < found.length; f++) lines.push("  " + found[f])
+
+    // The markup from the lead on, tags kept, texts cut to a few words.
+    var lead = articleMeta(html, "og:description")
+    var bodyStart = html.search(/<body[\s>]/i)
+    var at = html.search(/<h1[\s>]/i)
+    if (at < 0 && lead) at = html.indexOf(lead.substring(0, 25), bodyStart)
+    if (at >= 0) {
+        var piece = articleClean(html.substring(Math.max(0, at - 300), at + 6000))
+            .replace(/>([^<]{30})[^<]+</g, ">$1…<")
+            .replace(/\s+/g, " ")
+        lines.push("markup from the lead on:", piece.substring(0, 2500))
+    } else {
+        lines.push("lead not found in the markup")
+    }
+    return lines.join("\n")
 }

@@ -47,6 +47,18 @@ buttons and related links. When the markup has too little text, it uses the
 article data the page embeds for search engines (`application/ld+json`).
 The headline, lead, main photo and time come from the page's meta tags.
 
+When the markup has little text, it also looks through the data a page
+built with JavaScript carries (Next.js's `__NEXT_DATA__`, other
+`application/json` scripts and `window.__STATE__ = {...}`) for the fullest
+story there: typed blocks (paragraphs with their spans, subheadings,
+quotes, pictures), Draft.js blocks or HTML. "Read also" stories nested in
+the story's `<article>` are left out instead of cutting it short.
+
+If a story's text still isn't found, its pull-down menu has **Copy page
+report**: a short description of how the page is built (its tags, embedded
+data and where the long texts are in it, and the markup from the headline
+on). Paste it to whoever is fixing the reader.
+
 > **Not yet checked against real MTV Uutiset pages or feeds.** The build
 > environment's network couldn't reach mtvuutiset.fi, so the feeds'
 > addresses are unconfirmed and the reader has only been tested on example
@@ -77,7 +89,7 @@ This app has been created using AI generated code (Claude code).
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/mtvfish-0.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/mtvfish-0.1.1-1.aarch64.rpm
 ```
 
 ## Tests

@@ -1,6 +1,6 @@
 Name:       mtvfish
 Summary:    MTV Uutiset's news, whole stories and photos, in one app
-Version:    0.1.0
+Version:    0.1.1
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -43,6 +43,11 @@ desktop-file-install --delete-original \
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Wed Oct 21 2026 Valatalo - 0.1.1-1
+- Reads stories from pages built with JavaScript (the data embedded in the
+  page) and from stories with other stories nested inside them.
+- "Copy page report" in a story's pull-down menu when its text isn't found.
+
 * Wed Oct 21 2026 Valatalo - 0.1.0-1
 - First version, from YleFish: MTV Uutiset's news, with each whole story
   and its photos read in the app.

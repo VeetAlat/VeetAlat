@@ -186,6 +186,9 @@ Item {
                 smoke.check("and shows the feed's headline, summary and photo instead",
                             sp4.title === n.items[1].title && sp4.lead === n.items[1].summary
                             && sp4.blocks.length === 1 && sp4.blocks[0].src === n.items[1].image)
+                var report = sp4.pageReport()
+                smoke.check("a page report can be copied for fixing",
+                            report.indexOf("MTVFish page report") === 0 && report.indexOf("status: 404") > 0)
                 stack.pop(null, PageStackAction.Immediate)
                 smoke.check("back on the main page", stack.currentPage === smoke.page)
 

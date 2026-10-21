@@ -104,6 +104,81 @@ check("relative to the page", ctx.articleAbsolute("x.jpg", "https://a.example/di
 check("srcset without widths: the first", ctx.articlePickSrcset("one.jpg, two.jpg") === "one.jpg")
 check("srcset all small: the biggest", ctx.articlePickSrcset("s.jpg 200w, m.jpg 640w") === "m.jpg")
 
+// 6. "Read also" stories inside the story's own <article>: the story isn't
+// cut off at the first of them, and they're left out.
+const para = n => `Kappale ${n}, jossa on tarpeeksi tekstiä ollakseen oikea kappale uutisessa.`
+const nested = parse(`<html><body><main><article class="story"><h1>Otsikko</h1>
+<p>${para(1)}</p>
+<article class="teaser"><h3>Lue myös</h3><p>Toinen juttu, jota ei kuulu näyttää tässä.</p></article>
+<p>${para(2)}</p><h2>Väliotsikko</h2><p>${para(3)}</p>
+<article class="teaser"><p>Vielä yksi muu juttu.</p></article>
+<p>${para(4)}</p><p>${para(5)}</p><p>${para(6)}</p></article></main></body></html>`)
+check("nested articles: the whole story", nested.source === "page"
+      && types(nested) === "text,text,heading,text,text,text,text" && nested.blocks[6].text === para(6))
+check("nested articles: their text is left out", !nested.blocks.some(b => /juttu/.test(b.text)))
+
+// 7. A page built with JavaScript (Next.js): the markup has only a lead,
+// the story is in __NEXT_DATA__ as typed blocks with spans and pictures.
+const next = {
+    props: { pageProps: {
+        related: [{ title: "Muu juttu", lead: "Ei tätä", url: "/artikkeli/muu/1" },
+                  { title: "Kolmas juttu", lead: "Eikä tätä", url: "/artikkeli/kolmas/2" }],
+        article: { title: "Hallitus esittää", body: [
+            { type: "paragraph", children: [{ text: "Ensimmäinen kappale " }, { text: "kahdessa osassa, ja tarpeeksi pitkä." }] },
+            { type: "image", image: { url: "https://kuvat.example/w_1080/1.jpg", caption: "Kuvateksti" } },
+            { type: "paragraph", text: para(2) },
+            { type: "heading", text: "Mitä seuraavaksi?" },
+            { type: "quote", text: "Tämä on lainaus." },
+            { type: "paragraph", text: para(3) },
+            { type: "ad", id: "mainos-1" },
+            { type: "paragraph", text: para(4) }
+        ] } } } }
+const built = parse(`<html><head><meta property="og:title" content="Hallitus esittää">
+<meta property="og:image" content="https://kuvat.example/w_1200/main.jpg"></head><body>
+<div id="__next"><h1>Hallitus esittää</h1><p>Vain ingressi.</p></div>
+<script id="__NEXT_DATA__" type="application/json">${JSON.stringify(next)}</script></body></html>`,
+    "https://www.mtvuutiset.fi/artikkeli/x/1")
+check("built page: the story comes from its data", built.source === "data")
+check("built page: main photo, then the blocks in order, ads skipped",
+      types(built) === "image,text,image,text,heading,quote,text,text"
+      && built.blocks[0].src === "https://kuvat.example/w_1200/main.jpg")
+check("built page: spans joined", built.blocks[1].text === "Ensimmäinen kappale kahdessa osassa, ja tarpeeksi pitkä.")
+check("built page: picture and caption from the data",
+      built.blocks[2].src === "https://kuvat.example/w_1080/1.jpg" && built.blocks[2].caption === "Kuvateksti")
+check("built page: other stories' leads aren't taken", !built.blocks.some(b => /Ei tätä|Eikä/.test(b.text || "")))
+
+// 8. The story as HTML in "window.__STATE__ = {...}".
+const state = { story: { id: 5, bodyHtml: `<p>${para(1)}</p><h2>Väli</h2><p>${para(2)}</p><figure><img src="/kuvat/2.jpg"><figcaption>Kuva 2</figcaption></figure><p>${para(3)}</p>` } }
+const st = parse(`<html><body><div id="app"></div><script>window.__STATE__ = ${JSON.stringify(state)};</script></body></html>`,
+                 "https://www.mtvuutiset.fi/artikkeli/y/5")
+check("state page: HTML in the data read as a story", st.source === "data"
+      && types(st) === "text,heading,text,image,text" && st.blocks[3].src === "https://www.mtvuutiset.fi/kuvat/2.jpg")
+
+// 9. Draft.js-style blocks with their own types.
+const draft = { content: { blocks: [
+    { key: "a", type: "unstyled", text: para(1) }, { key: "b", type: "header-two", text: "Otsikko kaksi" },
+    { key: "c", type: "unstyled", text: para(2) }, { key: "d", type: "unordered-list-item", text: "Kohta" },
+    { key: "e", type: "atomic", text: " " }, { key: "f", type: "unstyled", text: para(3) }, { key: "g", type: "blockquote", text: "Lainaus" }
+], entityMap: {} } }
+const dr = parse(`<body><script type="application/json">${JSON.stringify(draft)}</script></body>`)
+check("draft blocks by type", dr.source === "data" && types(dr) === "text,heading,text,item,text,quote")
+
+// 10. A full story in the markup wins over anything in the data.
+const both = parse(`<body><article>${[1, 2, 3, 4, 5, 6, 7, 8].map(n => `<p>${para(n)}</p>`).join("")}</article>
+<script type="application/json">${JSON.stringify(next)}</script></body>`)
+check("full markup is used as is", both.source === "page" && both.blocks.length === 8)
+
+// 11. Data that isn't a story, or isn't valid, doesn't break anything.
+const junk = parse(`<body><p>Lataa sovellus</p><script type="application/json">${JSON.stringify({ menu: ["Etusivu", "Urheilu"], x: "y".repeat(300) })}</script><script>window.a = {broken</script></body>`)
+check("no story anywhere: says so", junk.source !== "data" && !junk.blocks.some(b => /Etusivu/.test(b.text || "")))
+
+// 12. The page report for fixing the reader.
+const report = ctx.articleReport(`<html><head><meta property="og:description" content="Vain ingressi."></head><body><h1>Otsikko</h1><p>Vain ingressi.</p>
+<script id="__NEXT_DATA__" type="application/json">${JSON.stringify(next)}</script></body></html>`, "https://www.mtvuutiset.fi/artikkeli/x/1", 200)
+check("report: what the page has", /status: 200/.test(report) && /tags: article 0/.test(report) && /__NEXT_DATA__ application\/json/.test(report))
+check("report: where the data's long texts and lists are", /data0\.props\.pageProps\.article\.body\[8\]: paragraph, image, paragraph/.test(report))
+check("report: the markup from the headline on", /<h1>Otsikko<\/h1>/.test(report))
+
 // 5. The Qt 5.6 engine is ES5 only.
 const src = fs.readFileSync(path.join(__dirname, "../qml/js/article.js"), "utf8")
 check("ES5 only (no let/const/arrow/template)", !/\b(let|const)\s|=>|`/.test(src))
