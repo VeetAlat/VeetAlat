@@ -14,8 +14,8 @@ Made by Valatalo, for personal use.
   | Uutiset | MTV Uutiset's latest news (`www.mtvuutiset.fi/api/feed/rss/uutiset_uusimmat`) |
   | Uusimmat | The latest 20 stories from all of mtvuutiset.fi (`api.mtvuutiset.fi/mtvuutiset/api/feed/rss/mtv_uusimmat_20`) |
 
-  MTV doesn't publish a feed list that could be reached while building
-  this, so these two come from feed directories. More categories are one
+  These two come from feed directories (MTV's own feed list couldn't be
+  reached while building this) and work on the phone. More categories are one
   line each in `qml/js/feeds.js` once their addresses are known.
 - **Tap a story to read it** in the app: headline, time, lead, every
   paragraph and subheading, quotes, lists, and the photos with their
@@ -59,11 +59,10 @@ report**: a short description of how the page is built (its tags, embedded
 data and where the long texts are in it, and the markup from the headline
 on). Paste it to whoever is fixing the reader.
 
-> **Not yet checked against real MTV Uutiset pages or feeds.** The build
-> environment's network couldn't reach mtvuutiset.fi, so the feeds'
-> addresses are unconfirmed and the reader has only been tested on example
-> pages. If a real story shows only its summary, its page is built some
-> other way and the reader needs an MTV-specific step.
+> **Checked on a real phone:** both feeds and the stories' text work on
+> mtvuutiset.fi (version 0.1.1, Jolla Phone). The build environment itself
+> couldn't reach the site, so if MTV changes its pages, "Copy page report"
+> is the way to see what changed.
 
 ## For personal use only
 
