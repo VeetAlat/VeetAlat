@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- An example story page for the smoke test, written in the usual shape of a
+     news page. Not a copy of MTV's pages. -->
+<html lang="fi"><head>
+<meta charset="utf-8">
+<meta property="og:title" content="Hallitus esittää muutoksia työttömyysturvaan">
+<meta property="og:description" content="Esitys lähtee lausuntokierrokselle ensi viikolla.">
+<meta property="og:image" content="https://kuvat.example/w_1200/500000.jpg">
+<meta property="article:published_time" content="2026-10-21T09:03:15+03:00">
+<script>window.__STATE__ = { "nav": "<p>ei tekstiä</p>" };</script>
+</head><body>
+<nav><a href="/">Etusivu</a></nav>
+<article>
+  <h1>Hallitus esittää muutoksia työttömyysturvaan</h1>
+  <figure>
+    <img src="https://kuvat.example/w_1080/500001.jpg" alt="Ministeri">
+    <figcaption>Ministeri esitteli muutokset tiistaina.</figcaption>
+  </figure>
+  <p>Hallitus esittää muutoksia, jotka koskevat kaikkia työnhakijoita.</p>
+  <h2>Mitä muuttuu?</h2>
+  <p>Muutokset tulisivat voimaan ensi vuoden alusta.</p>
+  <figure><img src="https://kuvat.example/w_1080/500002.jpg" alt="Kaavio"></figure>
+  <p>Esitys lähtee lausuntokierrokselle ensi viikolla, ja eduskunta käsittelee sen keväällä.</p>
+</article>
+<footer>© Esimerkki</footer>
+</body></html>

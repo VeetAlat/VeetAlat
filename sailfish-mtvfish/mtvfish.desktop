@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=MTVFish
+Comment=MTV Uutiset's news, whole stories and photos, in one app
+Icon=mtvfish
+Exec=mtvfish
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Needs the network to fetch MTV Uutiset's feeds, stories and photos; writes only its own cache
+# in ~/.local/share/org.veetalat/mtvfish.
+Permissions=Internet
+OrganizationName=org.veetalat
+ApplicationName=mtvfish

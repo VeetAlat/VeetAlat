@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172">
+  <defs>
+    <clipPath id="screen"><path d="M42 58 C 42 54, 46 52, 52 52 L 106 52 C 112 52, 116 54, 116 58 L 116 116 C 116 120, 112 122, 106 122 L 52 122 C 46 122, 42 120, 42 116 Z"/></clipPath>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#bfeee8"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(-6 6)">
+  <!-- Tail -->
+  <path d="M132 87 L 160 56 C 165 72, 165 102, 160 118 Z" fill="#ff6f4f" stroke="#c2412a"
+        stroke-width="3" stroke-linejoin="round"/>
+  <!-- Antenna for a top fin, and a bottom fin -->
+  <path d="M74 42 L 58 14" stroke="#2b2b45" stroke-width="4" stroke-linecap="round"/>
+  <path d="M84 42 L 104 12" stroke="#2b2b45" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="58" cy="14" r="5" fill="#ff6f4f" stroke="#c2412a" stroke-width="2.5"/>
+  <circle cx="104" cy="12" r="5" fill="#ff6f4f" stroke="#c2412a" stroke-width="2.5"/>
+  <path d="M70 132 C 76 152, 98 152, 102 132 Z" fill="#ff6f4f" stroke="#c2412a" stroke-width="3" stroke-linejoin="round"/>
+  <!-- The body: a TV set -->
+  <path d="M22 64 C 22 50, 32 42, 46 42 L 114 42 C 128 42, 136 52, 136 66 L 136 110 C 136 124, 128 132, 114 132 L 46 132 C 32 132, 22 124, 22 110 Z" fill="#2b2b45"/>
+  <path d="M42 58 C 42 54, 46 52, 52 52 L 106 52 C 112 52, 116 54, 116 58 L 116 116 C 116 120, 112 122, 106 122 L 52 122 C 46 122, 42 120, 42 116 Z" fill="url(#glass)"/>
+  <g clip-path="url(#screen)">
+    <rect x="50" y="62" width="58" height="9" rx="4.5" fill="#1c3b5a"/>
+    <rect x="50" y="78.0" width="58" height="4.5" rx="2.25" fill="#1c3b5a" fill-opacity="0.7"/>
+    <rect x="50" y="86.5" width="50" height="4.5" rx="2.25" fill="#1c3b5a" fill-opacity="0.7"/>
+    <rect x="50" y="95.0" width="58" height="4.5" rx="2.25" fill="#1c3b5a" fill-opacity="0.7"/>
+    <rect x="50" y="103.5" width="44" height="4.5" rx="2.25" fill="#1c3b5a" fill-opacity="0.7"/>
+    <rect x="50" y="112.0" width="54" height="4.5" rx="2.25" fill="#1c3b5a" fill-opacity="0.7"/>
+    <!-- A glint on the glass -->
+    <path d="M100 54 L 116 54 L 116 70 Z" fill="#ffffff" fill-opacity="0.55"/>
+  </g>
+  <path d="M42 58 C 42 54, 46 52, 52 52 L 106 52 C 112 52, 116 54, 116 58 L 116 116 C 116 120, 112 122, 106 122 L 52 122 C 46 122, 42 120, 42 116 Z" fill="none" stroke="#ff6f4f" stroke-width="2.5"/>
+  <!-- Knobs on the side, like gills -->
+  <circle cx="126" cy="66" r="4.5" fill="#ff6f4f"/>
+  <circle cx="126" cy="82" r="4.5" fill="#ff6f4f"/>
+  <!-- The eye, on the case by the nose -->
+  <circle cx="32" cy="70" r="6" fill="#ffffff"/>
+  <circle cx="31" cy="71" r="3.6" fill="#1c3b5a"/>
+  <circle cx="32.4" cy="69.4" r="1.3" fill="#ffffff"/>
+  </g>
+</svg>

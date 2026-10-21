@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>MTV Uutiset | Uusimmat</title>
+    <link>https://www.mtvuutiset.fi/</link>
+    <item>
+      <title>Juna-liikenteessä häiriöitä Tampereella</title>
+      <link>https://www.mtvuutiset.fi/artikkeli/esimerkki/10000010</link>
+      <description>Häiriö johtuu ratatöistä.</description>
+      <pubDate>Tue, 30 Sep 2026 13:40:00 +0300</pubDate>
+      <guid isPermaLink="false">10000010</guid>
+      <category>Liikenne</category>
+      <media:thumbnail url="https://kuvat.example/w_300/100010.jpg"/>
+    </item>
+    <item>
+      <title>Kunnanvaltuusto päätti uudesta koulusta</title>
+      <link>https://www.mtvuutiset.fi/artikkeli/esimerkki/10000011</link>
+      <description>Koulu valmistuu vuonna 2028.</description>
+      <pubDate>Tue, 30 Sep 2026 13:05:00 +0300</pubDate>
+      <guid isPermaLink="false">10000011</guid>
+    </item>
+  </channel>
+</rss>
