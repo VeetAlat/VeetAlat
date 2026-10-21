@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172">
+  <defs>
+    <clipPath id="body"><path d="M18 88 C 30 42, 92 30, 126 58 C 134 65, 138 76, 138 88 C 138 100, 134 111, 126 118 C 92 146, 30 134, 18 88 Z"/></clipPath>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e4f3f6"/>
+    </linearGradient>
+  </defs>
+  <!-- Tail -->
+  <path d="M132 88 L 160 56 C 164 70, 164 106, 160 120 Z" fill="#16b3c4" stroke="#0b7f8f"
+        stroke-width="3" stroke-linejoin="round"/>
+  <!-- Fins, top and bottom -->
+  <path d="M66 40 C 76 22, 100 20, 110 44 Z" fill="#16b3c4" stroke="#0b7f8f" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M74 134 C 82 150, 100 150, 104 130 Z" fill="#16b3c4" stroke="#0b7f8f" stroke-width="3" stroke-linejoin="round"/>
+  <!-- The body: a news page -->
+  <path d="M18 88 C 30 42, 92 30, 126 58 C 134 65, 138 76, 138 88 C 138 100, 134 111, 126 118 C 92 146, 30 134, 18 88 Z" fill="url(#paper)"/>
+  <g clip-path="url(#body)">
+    <rect x="44" y="56" width="74" height="9" rx="4.5" fill="#0b2e63"/>
+    <rect x="44" y="74" width="33" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="83" y="74" width="35" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="44" y="83" width="33" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="83" y="83" width="35" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="44" y="92" width="33" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="83" y="92" width="35" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="44" y="101" width="33" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="83" y="101" width="35" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="44" y="110" width="33" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="83" y="110" width="35" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <rect x="44" y="119" width="33" height="4.5" rx="2.25" fill="#0b2e63" fill-opacity="0.75"/>
+    <!-- A folded corner of the page, up at the gills -->
+    <path d="M30 60 L 38 52 L 38 60 Z" fill="#16b3c4" fill-opacity="0.35"/>
+  </g>
+  <path d="M18 88 C 30 42, 92 30, 126 58 C 134 65, 138 76, 138 88 C 138 100, 134 111, 126 118 C 92 146, 30 134, 18 88 Z" fill="none" stroke="#0b7f8f" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Gill and eye -->
+  <path d="M38 66 C 33 78, 33 98, 38 110" fill="none" stroke="#16b3c4" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="28" cy="80" r="5.5" fill="#0b2e63"/>
+  <circle cx="29.8" cy="78.2" r="1.8" fill="#ffffff"/>
+</svg>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Yle Uutiset | Tuoreimmat uutiset</title>
+    <link>https://yle.fi/uutiset</link>
+    <item>
+      <title>Juna-liikenteessä häiriöitä Tampereella</title>
+      <link>https://yle.fi/a/74-20100010</link>
+      <description>Häiriö johtuu ratatöistä.</description>
+      <pubDate>Tue, 30 Sep 2026 13:40:00 +0300</pubDate>
+      <guid isPermaLink="false">74-20100010</guid>
+      <category>Liikenne</category>
+      <media:thumbnail url="https://images.cdn.yle.fi/image/upload/w_300/39-100010.jpg"/>
+    </item>
+    <item>
+      <title>Kunnanvaltuusto päätti uudesta koulusta</title>
+      <link>https://yle.fi/a/74-20100011</link>
+      <description>Koulu valmistuu vuonna 2028.</description>
+      <pubDate>Tue, 30 Sep 2026 13:05:00 +0300</pubDate>
+      <guid isPermaLink="false">74-20100011</guid>
+    </item>
+  </channel>
+</rss>

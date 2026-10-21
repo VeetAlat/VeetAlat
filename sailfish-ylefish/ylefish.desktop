@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=YleFish
+Comment=Yle's news, whole stories and photos, in one app
+Icon=ylefish
+Exec=ylefish
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Needs the network to fetch Yle's feeds, stories and photos; writes only its own cache
+# in ~/.local/share/org.veetalat/ylefish.
+Permissions=Internet
+OrganizationName=org.veetalat
+ApplicationName=ylefish
