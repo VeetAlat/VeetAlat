@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=CodeSysFish
+Comment=Write Structured Text (IEC 61131-3) and run it like a PLC
+Icon=codesysfish
+Exec=codesysfish
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# No network or other permissions: projects are kept in its own data
+# directory, ~/.local/share/org.veetalat/codesysfish.
+OrganizationName=org.veetalat
+ApplicationName=codesysfish
