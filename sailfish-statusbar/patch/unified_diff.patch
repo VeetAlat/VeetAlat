@@ -1,0 +1,17 @@
+--- a/usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml
++++ b/usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml
+@@ -29,4 +29,14 @@
+             contentItem.appendItem(window)
+         }
+     }
++
++    // StatusBar patch: a black bar over the notch with the time and status icons.
++    // Loaded from its own file, so if it fails the app layer still works.
++    Loader {
++        property Item hostLayer: appLayer
++
++        parent: appLayer.overlayItem
++        width: parent ? parent.width : 0
++        source: "file:///usr/share/sailfishos-patch-statusbar/NotchStatusBar.qml"
++    }
+ }
