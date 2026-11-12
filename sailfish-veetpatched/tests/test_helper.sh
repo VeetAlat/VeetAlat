@@ -19,7 +19,7 @@ fresh() {   # fresh <fixture>: a new root with that AppLayer.qml
     cp "$FIX/$1" "$W/original"
 }
 T="$W/root/usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml"
-export VP_ROOT="$W/root" VP_PATCHES="$HERE/patches" VP_STATE="$W/state" VP_OUT="$W/out" VP_USER="$(id -un)"
+export VP_ROOT="$W/root" VP_PATCHES="$HERE/patches" VP_STATE="$W/state" VP_OUT="$W/out" VP_USER="$(id -un)" VP_SYSLOG=0
 run() { sh "$H" "$@"; }
 
 for f in AppLayer-4.6.qml AppLayer-5.2.qml AppLayer-no-final-newline.qml AppLayer-crlf.qml; do
@@ -87,6 +87,41 @@ fresh AppLayer-4.6.qml
 run apply statusbar > /dev/null; run unapply-all > /dev/null
 cmp -s "$T" "$W/original"; check "unapply-all puts the original back" $?
 run apply nonsense 2> /dev/null; [ $? = 2 ]; check "the command line refuses unknown patches" $?
+
+# --- Logging ---
+L="$W/state/log"
+fresh AppLayer-5.2.qml
+mkdir -p "$W/root/etc"; printf 'NAME="Sailfish OS"\nVERSION_ID=5.2.0.15\n' > "$W/root/etc/os-release"
+echo "apply statusbar 50" > "$W/out/request"; run serve
+grep -q "INFO  request #50: apply statusbar" "$L"; check "log: the request" $?
+grep -q "INFO  context: Sailfish OS 5.2.0.15, .*helper 0.2.0" "$L"; check "log: the phone's context" $?
+grep -q "INFO  statusbar: applying to /usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml" "$L"; check "log: what it changes" $?
+grep -Eq "INFO  statusbar: /usr/share/.*AppLayer.qml is [0-9]+ lines, [0-9]+ bytes, sha256 [0-9a-f]{12}" "$L"; check "log: the file before, with its checksum" $?
+grep -q "INFO  statusbar: backed up to" "$L" && grep -Eq "INFO  statusbar: block goes in before line [0-9]+" "$L"; check "log: the backup and where the block goes" $?
+grep -q "INFO  statusbar: checked: taking it out again gives the original" "$L"; check "log: the check" $?
+grep -Eq "INFO  statusbar: applied; .* is now [0-9]+ lines" "$L"; check "log: the result, with the file after" $?
+grep -q "INFO  request #50 answered: statusbar applied" "$L"; check "log: the answer" $?
+grep -q "request #50: apply statusbar" "$W/out/log"; check "log: handed to the app" $?
+echo "unapply statusbar 51" > "$W/out/request"; run serve
+grep -q "INFO  statusbar: putting the original back from the backup" "$L" && grep -q "INFO  statusbar: removed;" "$L"; check "log: taking it out" $?
+printf 'rm -rf /secret-stuff 52\n' > "$W/out/request"; run serve
+grep -q "WARN  refused an unknown request (" "$L" && ! grep -q "secret-stuff" "$L"; check "log: a refused request, without its contents" $?
+echo "apply ../../etc/passwd 53" > "$W/out/request"; run serve
+grep -q "INFO  request #53: apply -" "$L" && grep -q "WARN  request #53 refused: there's no such patch" "$L" && ! grep -q "passwd" "$L"
+check "log: an unknown patch, without its name" $?
+sed -i 's/id: appLayer/id: other/' "$T"; run apply statusbar > /dev/null
+grep -q "ERROR statusbar: not applied: .* has no 'id: appLayer'" "$L"; check "log: a wrong file is an ERROR, saying why" $?
+fresh AppLayer-4.6.qml
+run apply statusbar > /dev/null; sed -i 's/objectName: "appLayer"/objectName: "appLayer" \/\/ updated/' "$T"; run unapply statusbar > /dev/null
+grep -q "WARN  statusbar: .* changed since it was patched (an update?)" "$W/state/log"; check "log: an updated file is a WARN" $?
+bad=$(grep -Evc '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} (INFO |WARN |ERROR) ' "$W/state/log")
+[ "$bad" = 0 ]; check "log: every line has a time and a level" $?
+# Rotation: past 256 kB, the log moves to log.1 and starts again.
+fresh AppLayer-4.6.qml
+mkdir -p "$W/state"; awk 'BEGIN { for (i = 0; i < 4000; i++) print "2026-01-01 00:00:00 INFO  filler line number " i " to make the log big" }' > "$W/state/log"
+run apply statusbar > /dev/null
+[ -f "$W/state/log.1" ] && [ "$(wc -c < "$W/state/log")" -lt 20000 ] && grep -q "statusbar: applied" "$W/state/log"
+check "log: rotated past 256 kB, the new entries kept" $?
 
 echo; echo "$PASS passed, $FAIL failed"
 [ "$FAIL" = 0 ]

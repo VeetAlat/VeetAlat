@@ -5,7 +5,7 @@ Page {
     id: page
 
     readonly property string author: "Valatalo"
-    readonly property string version: "0.1.0"
+    readonly property string version: "0.2.0"
 
     // Tests set this to see where a tap would go instead of opening the browser.
     property var openLink: function(link) { Qt.openUrlExternally(link) }
@@ -46,7 +46,8 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryHighlightColor
-                text: "To take every patch out, in the Terminal:\n" +
+                text: "The Log page (pull down on the main page) shows what happened. For the helper's whole " +
+                      "log: devel-su journalctl -t veetpatched\n\nTo take every patch out, in the Terminal:\n" +
                       "devel-su /usr/libexec/veetpatched/veetpatched-helper unapply-all\n" +
                       "then restart the phone. Uninstalling VeetPatched does the same."
             }

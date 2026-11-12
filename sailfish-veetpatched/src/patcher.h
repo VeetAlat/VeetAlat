@@ -21,6 +21,10 @@ class Patcher : public QObject
     // The last answer: { patch, state, message, ok }.
     Q_PROPERTY(QVariantMap lastResult READ lastResult NOTIFY lastResultChanged)
     Q_PROPERTY(QString log READ log NOTIFY logChanged)
+    // The helper's log and the app's, merged in time order, newest last:
+    // [{ time, level, source, text }], level "INFO", "WARN" or "ERROR",
+    // source "helper" (root) or "app".
+    Q_PROPERTY(QVariantList logEntries READ logEntries NOTIFY logChanged)
     // False when the helper didn't answer in time.
     Q_PROPERTY(bool helperAnswers READ helperAnswers NOTIFY helperAnswersChanged)
     Q_PROPERTY(QString dataDir READ dataDir WRITE setDataDir NOTIFY dataDirChanged)
@@ -32,7 +36,9 @@ public:
     QVariantList patches() const { return m_patches; }
     bool busy() const { return m_busy; }
     QVariantMap lastResult() const { return m_lastResult; }
-    QString log() const { return m_log; }
+    // Both logs as text, for copying.
+    QString log() const;
+    QVariantList logEntries() const { return m_logEntries; }
     bool helperAnswers() const { return m_helperAnswers; }
     QString dataDir() const { return m_dataDir; }
     void setDataDir(const QString &dir);
@@ -41,6 +47,8 @@ public:
     Q_INVOKABLE bool unapply(const QString &id) { return request(QStringLiteral("unapply"), id); }
     Q_INVOKABLE bool refresh() { return request(QStringLiteral("status"), QStringLiteral("-")); }
     Q_INVOKABLE bool restartHome() { return request(QStringLiteral("restart-home"), QStringLiteral("-")); }
+    // Re-reads both logs (the app's is written as things happen).
+    Q_INVOKABLE void reloadLog();
 
 signals:
     void patchesChanged();
@@ -57,11 +65,12 @@ private:
     void poll();
     void readPatches();
     void setBusy(bool busy);
+    void logApp(const QString &level, const QString &text);
 
     QVariantList m_patches;
     bool m_busy = false;
     QVariantMap m_lastResult;
-    QString m_log;
+    QVariantList m_logEntries;
     bool m_helperAnswers = true;
     QString m_dataDir;
     QString m_patchesDir;

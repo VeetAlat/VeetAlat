@@ -23,22 +23,70 @@
 # patch out removes exactly those lines; the original is kept in
 # /var/lib/veetpatched/backup and comes back byte for byte.
 #
+# Logging: every step goes to /var/lib/veetpatched/log ("DATE TIME LEVEL
+# text", LEVEL being INFO, WARN or ERROR; kept under 256 kB, the older part
+# in log.1) and to the system journal (journalctl -t veetpatched). Requests
+# that are refused are logged without their contents.
+#
 # For the tests, VP_ROOT, VP_PATCHES, VP_STATE, VP_OUT and VP_USER point it
-# at copies instead of the system.
+# at copies instead of the system, and VP_SYSLOG=0 keeps it out of the journal.
 
 set -u
 umask 022
 
+VERSION=0.2.0
 ROOT=${VP_ROOT:-}
 PATCHES=${VP_PATCHES:-/usr/share/veetpatched/patches}
 STATE=${VP_STATE:-/var/lib/veetpatched}
 USER_NAME=${VP_USER:-defaultuser}
 OUT=${VP_OUT:-/home/$USER_NAME/.local/share/org.veetalat/veetpatched}
 LOG=$STATE/log
+LOG_MAX=262144
+SYSLOG=${VP_SYSLOG:-1}
 
+# log LEVEL text...
 log() {
+    level=$1
+    shift
     mkdir -p "$STATE"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"
+    if [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt "$LOG_MAX" ]; then
+        mv -f "$LOG" "$LOG.1"
+    fi
+    printf '%s %-5s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$level" "$*" >> "$LOG"
+    if [ "$SYSLOG" = 1 ] && command -v logger > /dev/null 2>&1; then
+        case "$level" in
+            ERROR) prio=user.err ;;
+            WARN) prio=user.warning ;;
+            *) prio=user.info ;;
+        esac
+        logger -t veetpatched -p "$prio" -- "$*" 2> /dev/null || :
+    fi
+}
+
+# Runs a command; on failure logs it with its own error output.
+# Usage: logged "what it does" command args...
+logged() {
+    what=$1
+    shift
+    err=$("$@" 2>&1 > /dev/null)
+    rc=$?
+    if [ "$rc" != 0 ]; then
+        log ERROR "$what failed (exit $rc): $(printf '%s' "$err" | tr '\n' ' ' | cut -c 1-300)"
+    fi
+    return "$rc"
+}
+
+# "123 lines, 4567 bytes, sha256 0123456789ab": a file, briefly.
+describe() {
+    sum=$(sha256sum "$1" 2> /dev/null | cut -c 1-12)
+    echo "$(wc -l < "$1" | tr -d ' ') lines, $(wc -c < "$1" | tr -d ' ') bytes, sha256 ${sum:-?}"
+}
+
+# The phone, for the log: what's running when something happens.
+context() {
+    os=$(sed -n 's/^VERSION_ID=//p' "$ROOT/etc/os-release" 2> /dev/null | tr -d '"')
+    home=$(rpm -q lipstick-jolla-home-qt5 2> /dev/null || echo "?")
+    log INFO "context: Sailfish OS ${os:-?}, $home, helper $VERSION"
 }
 
 # A patch id: lower-case letters, digits and dashes, and a folder of ours.
@@ -73,22 +121,29 @@ without() {
 apply() {
     id=$1
     load "$id"
+    log INFO "$id: applying to $TARGET"
     if [ ! -f "$T" ]; then
-        log "$id: not applied, $TARGET is missing"
+        log ERROR "$id: not applied: $TARGET is missing"
         echo "failed The file it changes is missing: $TARGET"
         return 1
     fi
+    log INFO "$id: $TARGET is $(describe "$T")"
     if ! grep -q "$EXPECT" "$T"; then
-        log "$id: not applied, $TARGET isn't the file it expects"
+        log ERROR "$id: not applied: $TARGET has no '$EXPECT', so it isn't the file this patch is for"
         echo "failed $TARGET isn't the file this patch expects"
         return 1
     fi
     if is_applied "$id"; then
+        log INFO "$id: already applied, nothing to do"
         echo "applied"
         return 0
     fi
     mkdir -p "$STATE/backup/$id"
-    cp -p "$T" "$STATE/backup/$id/original"
+    if ! logged "$id: backing up $TARGET" cp -p "$T" "$STATE/backup/$id/original"; then
+        echo "failed The original couldn't be backed up, so nothing was changed"
+        return 1
+    fi
+    log INFO "$id: backed up to $STATE/backup/$id/original"
     tmp="$STATE/backup/$id/patched"
     # The block goes before the last line that's just "}".
     if ! awk -v id="$id" -v blockfile="$PATCHES/$id/$BLOCK" '
@@ -106,57 +161,69 @@ apply() {
                 while ((getline b < blockfile) > 0) print b
                 print "    // VEETPATCHED:" id ":end"
                 for (i = last; i <= NR; i++) print lines[i]
-            }' "$T" > "$tmp"; then
-        log "$id: not applied, no closing brace found in $TARGET"
+                print last > "/dev/stderr"
+            }' "$T" > "$tmp" 2> "$STATE/backup/$id/line"; then
+        log ERROR "$id: not applied: $TARGET has no line that's just '}' to put the block before"
         echo "failed $TARGET doesn't end the way this patch expects"
         return 1
     fi
+    log INFO "$id: block goes in before line $(cat "$STATE/backup/$id/line")"
     # Check before writing: taking the block out again must give the
     # original (line for line, as awk writes it).
     awk '{ print }' "$STATE/backup/$id/original" > "$STATE/backup/$id/original.lines"
     if ! without "$id" "$tmp" | cmp -s - "$STATE/backup/$id/original.lines"; then
-        log "$id: not applied, the check failed"
+        log ERROR "$id: not applied: taking the block out again didn't give the original back"
         echo "failed The change didn't check out, so nothing was changed"
         return 1
     fi
+    log INFO "$id: checked: taking it out again gives the original"
     # Written in place, so the file keeps its owner and permissions.
-    cat "$tmp" > "$T"
-    if is_applied "$id"; then
-        log "$id: applied to $TARGET"
-        echo "applied"
-    else
-        cat "$STATE/backup/$id/original" > "$T"
-        log "$id: writing $TARGET failed, original put back"
+    if ! logged "$id: writing $TARGET" sh -c 'cat "$1" > "$2"' sh "$tmp" "$T" || ! is_applied "$id"; then
+        cat "$STATE/backup/$id/original" > "$T" 2> /dev/null
+        log ERROR "$id: writing $TARGET failed; the original was put back ($(describe "$T"))"
         echo "failed $TARGET couldn't be written"
         return 1
     fi
+    log INFO "$id: applied; $TARGET is now $(describe "$T")"
+    echo "applied"
 }
 
 # Prints "not-applied", or "failed <why>".
 unapply() {
     id=$1
     load "$id"
-    if [ ! -f "$T" ] || ! is_applied "$id"; then
+    if [ ! -f "$T" ]; then
+        log WARN "$id: $TARGET is missing, nothing to take out"
         echo "not-applied"
         return 0
     fi
+    if ! is_applied "$id"; then
+        log INFO "$id: not applied, nothing to do"
+        echo "not-applied"
+        return 0
+    fi
+    log INFO "$id: removing from $TARGET ($(describe "$T"))"
     tmp="$STATE/backup/$id/unpatched"
     mkdir -p "$STATE/backup/$id"
     without "$id" "$T" > "$tmp"
     backup="$STATE/backup/$id/original"
     if [ -f "$backup" ] && awk '{ print }' "$backup" | cmp -s - "$tmp"; then
-        # The original, byte for byte.
-        cat "$backup" > "$T"
+        log INFO "$id: putting the original back from the backup"
+        logged "$id: restoring $TARGET" sh -c 'cat "$1" > "$2"' sh "$backup" "$T"
     else
-        # The file changed since (an update?): just without our lines.
-        cat "$tmp" > "$T"
+        if [ -f "$backup" ]; then
+            log WARN "$id: $TARGET changed since it was patched (an update?): removing just the patch's lines"
+        else
+            log WARN "$id: no backup found: removing just the patch's lines"
+        fi
+        logged "$id: writing $TARGET" sh -c 'cat "$1" > "$2"' sh "$tmp" "$T"
     fi
     if is_applied "$id"; then
-        log "$id: removing it from $TARGET failed"
+        log ERROR "$id: removing it from $TARGET failed; the patch is still in"
         echo "failed $TARGET couldn't be written"
         return 1
     fi
-    log "$id: removed from $TARGET"
+    log INFO "$id: removed; $TARGET is now $(describe "$T")"
     echo "not-applied"
 }
 
@@ -176,20 +243,26 @@ status_lines() {
 }
 
 restart_home() {
-    uid=$(id -u "$USER_NAME" 2>/dev/null) || { echo "failed No user $USER_NAME"; return 1; }
-    if systemctl --user -M "$USER_NAME@" restart lipstick 2>/dev/null; then
-        log "home screen restarted"
+    uid=$(id -u "$USER_NAME" 2>/dev/null) || {
+        log ERROR "restart: there's no user $USER_NAME"
+        echo "failed No user $USER_NAME"
+        return 1
+    }
+    log INFO "restart: restarting the home screen (lipstick) for $USER_NAME"
+    if out=$(systemctl --user -M "$USER_NAME@" restart lipstick 2>&1); then
+        log INFO "restart: done (systemctl --user -M)"
         echo "restarted"
         return 0
     fi
-    if as_user env XDG_RUNTIME_DIR="/run/user/$uid" \
+    log WARN "restart: systemctl --user -M didn't work: $(printf '%s' "$out" | tr '\n' ' ' | cut -c 1-200)"
+    if out=$(as_user env XDG_RUNTIME_DIR="/run/user/$uid" \
             DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/dbus/user_bus_socket" \
-            systemctl --user restart lipstick; then
-        log "home screen restarted"
+            systemctl --user restart lipstick 2>&1); then
+        log INFO "restart: done (as $USER_NAME)"
         echo "restarted"
         return 0
     fi
-    log "restarting the home screen failed"
+    log ERROR "restart: failed as $USER_NAME too: $(printf '%s' "$out" | tr '\n' ' ' | cut -c 1-200)"
     echo "failed The home screen couldn't be restarted: restart the phone"
     return 1
 }
@@ -214,16 +287,19 @@ answer() {
         echo "result $2"
         status_lines
     } > "$reply"
-    tail -n 60 "$LOG" > "$STATE/answer-log" 2>/dev/null || : > "$STATE/answer-log"
-    as_user sh -c 'cat > "$1/status.tmp" && mv "$1/status.tmp" "$1/status"' sh "$OUT" < "$reply"
-    as_user sh -c 'cat > "$1/log.tmp" && mv "$1/log.tmp" "$1/log"' sh "$OUT" < "$STATE/answer-log"
+    # The log goes first: the app reads it as soon as the status arrives.
+    { [ -f "$LOG.1" ] && tail -n 200 "$LOG.1"; tail -n 200 "$LOG"; } 2> /dev/null | tail -n 200 > "$STATE/answer-log"
+    as_user sh -c 'cat > "$1/log.tmp" && mv "$1/log.tmp" "$1/log"' sh "$OUT" < "$STATE/answer-log" 2> /dev/null || :
+    if ! as_user sh -c 'cat > "$1/status.tmp" && mv "$1/status.tmp" "$1/status"' sh "$OUT" < "$reply" 2> "$STATE/answer-error"; then
+        log ERROR "couldn't write the answer to $OUT: $(head -c 200 "$STATE/answer-error" | tr '\n' ' ')"
+    fi
 }
 
 serve() {
     req="$OUT/request"
     [ -e "$req" ] || exit 0
     if [ -L "$req" ] || [ ! -f "$req" ]; then
-        log "refused a request that isn't a plain file"
+        log WARN "refused a request that isn't a plain file (a symlink?)"
         rm -f "$req"
         exit 1
     fi
@@ -236,11 +312,22 @@ serve() {
     tag=${3:-0}
     case "$tag" in ""|*[!0-9]*) tag=0 ;; esac
     case "$action" in
+        apply|unapply|status|restart-home) ;;
+        *)
+            # Not echoed: it could be anything.
+            log WARN "refused an unknown request (${#line} characters)"
+            answer "$tag" "- failed Unknown request"
+            return
+            ;;
+    esac
+    log INFO "request #$tag: $action $(valid_id "$id" && echo "$id" || echo "-")"
+    context
+    case "$action" in
         apply|unapply)
             if valid_id "$id"; then
                 result="$id $($action "$id")"
             else
-                log "refused: no patch called that"
+                log WARN "request #$tag refused: there's no such patch"
                 result="- failed No such patch"
             fi
             ;;
@@ -250,21 +337,20 @@ serve() {
         restart-home)
             result="- $(restart_home)"
             ;;
-        *)
-            log "refused an unknown request"
-            result="- failed Unknown request"
-            ;;
     esac
+    log INFO "request #$tag answered: $result"
     answer "$tag" "$result"
 }
 
 case "${1:-}" in
     apply|unapply)
         valid_id "${2:-}" || { echo "No patch called '${2:-}'" >&2; exit 2; }
+        log INFO "command line: $1 $2"
         out=$("$1" "$2"); echo "$out"
         case "$out" in failed*) exit 1 ;; esac
         ;;
     unapply-all)
+        log INFO "command line: unapply-all"
         for dir in "$PATCHES"/*/; do
             id=$(basename "$dir")
             valid_id "$id" && echo "$id: $(unapply "$id")"

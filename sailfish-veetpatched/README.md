@@ -43,6 +43,38 @@ Made by Valatalo.
 **Before updating Sailfish OS, switch the patches off.** An update
 replaces the changed files, which simply removes the patch.
 
+## Logging
+
+Both halves keep a log, and the app shows them merged, in time order:
+pull down → **Log**.
+
+- **Every line** has a time, a level (`INFO`, `WARN` or `ERROR`) and
+  where it came from: **helper (root)** or **app**.
+- **The helper** logs each request and its answer, plus the phone it ran
+  on (Sailfish version, the home screen package, its own version). For
+  each step of a patch it logs the file's size and sha256 before and
+  after, the backup, the line the block goes in before, and the check
+  that taking it out again gives the original.
+- **Failures say why:** a command's exit code and its error output, the
+  file that wasn't as expected, or that the home screen couldn't be
+  restarted and why.
+- **Rejected requests** are logged without their contents.
+- **The app** logs starting up, every request it sends, and how long
+  the answer took. If no answer comes, it logs an ERROR saying the
+  helper isn't running.
+- **Problems only** (pull-down on the Log page) shows only the warnings
+  and errors. **Copy log** copies everything as text, ready to paste
+  somewhere.
+- **The full log** is in `/var/lib/veetpatched/log` (rotated at 256 KB).
+  The helper also logs to the system journal:
+
+  ```sh
+  devel-su journalctl -t veetpatched
+  ```
+
+- **The app's own log** is `app.log` in
+  `~/.local/share/org.veetalat/veetpatched/` (rotated at 128 KB).
+
 ## If something goes wrong
 
 In the Terminal:
@@ -57,14 +89,14 @@ then restart the phone. Uninstalling VeetPatched does the same first.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/veetpatched-0.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/veetpatched-0.2.0-1.aarch64.rpm
 ```
 
 ## Tests
 
 ```sh
-sh tests/test_helper.sh       # the helper: 56 checks
-tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK: 19 checks
+sh tests/test_helper.sh       # the helper: 72 checks
+tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK: 29 checks
 ```
 
 **The helper's tests:**
@@ -75,13 +107,18 @@ tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK
   changes nothing;
 - a wrong or missing file is left alone, and unknown or malicious
   requests are refused;
-- after an OS update, taking a patch out keeps the update.
+- after an OS update, taking a patch out keeps the update;
+- the log has every step with levels and checksums, refused requests
+  are logged without their contents, and the log rotates.
 
 They pass on GNU tools, on the SDK target's own tools and on BusyBox.
 
 **The smoke test** runs the app in the SDK with the real helper in a loop
 standing in for systemd. It taps StatusBar's switch on and off through
 the page, and checks the home screen file is the original afterwards.
+It also checks both logs: the app's requests and answer times, the
+helper's steps, the failed home screen restart and a helper that never
+answers as ERRORs, and the Log page's *Problems only* filter.
 The patched file and the bar also compile against the SDK's Sailfish
 modules, with a stand-in for the home screen's private plugin.
 

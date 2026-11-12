@@ -1,6 +1,6 @@
 Name:       veetpatched
 Summary:    Small changes to Sailfish OS, on and off with a switch
-Version:    0.1.0
+Version:    0.2.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -69,6 +69,16 @@ systemctl daemon-reload || :
 /usr/lib/systemd/system/veetpatched.service
 
 %changelog
+* Thu Nov 12 2026 Valatalo - 0.2.0-1
+- Proper logging. The helper logs every step with a level (INFO, WARN,
+  ERROR), the files' sizes and checksums before and after, failing
+  commands' own error output and the phone's Sailfish and home screen
+  versions, to /var/lib/veetpatched/log (rotated past 256 kB) and the
+  system journal (journalctl -t veetpatched); refused requests are logged
+  without their contents. The app logs its requests, answers with their
+  times, and timeouts. The Log page merges both, newest first, with
+  problems marked and a "Problems only" view.
+
 * Thu Nov 12 2026 Valatalo - 0.1.0-1
 - First version: an app with a root helper (started by systemd) that
   applies and removes patches; first patch, StatusBar.
