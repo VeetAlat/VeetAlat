@@ -20,7 +20,7 @@ trap 'rm -rf "$WORK"' EXIT
 cp -r "$HERE" "$WORK/app"
 rm -rf "$WORK/app/RPMS" "$WORK/app/Makefile" "$WORK/app"/*.o "$WORK/app"/moc_* "$WORK/app/.mb2"
 cp "$HERE/tests/SmokeTest.qml" "$WORK/app/qml/SmokeTest.qml"
-python3 - "$WORK/app/qml/ambiencefish.qml" <<'PY'
+python3 - "$WORK/app/qml/ambiencecrop.qml" <<'PY'
 import sys
 path = sys.argv[1]
 s = open(path).read().rstrip()
@@ -35,9 +35,9 @@ docker run --rm -v "$WORK/app:/home/mersdk/src" -w /home/mersdk/src \
         mb2 -t $TARGET build > build.log 2>&1 || { tail -30 build.log; exit 1; }
         grep -E 'warning:' build.log | grep -v 'Wno-' | head -20 || true
         sb2 -t $TARGET -m sdk-install -R rpm -i --nodeps --force RPMS/*.i486.rpm > /dev/null 2>&1
-        AMBIENCEFISH_NO_WINDOW=1 AMBIENCEFISH_FIXTURES=/home/mersdk/src/tests/fixtures \
+        AMBIENCECROP_NO_WINDOW=1 AMBIENCECROP_FIXTURES=/home/mersdk/src/tests/fixtures \
         QT_LOGGING_TO_CONSOLE=1 QT_QPA_PLATFORM=minimal timeout 120 \
-            sb2 -t $TARGET /usr/bin/ambiencefish 2>&1 |
+            sb2 -t $TARGET /usr/bin/ambiencecrop 2>&1 |
             grep -v -E 'dconf|pixel ratio|DPI|^\$' || true" > "$WORK/out.log" 2>&1
 
 cat "$WORK/out.log"

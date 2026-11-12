@@ -58,7 +58,7 @@ QColor averageColour(const QImage &photo)
 
 Composer::Composer(QObject *parent)
     : QObject(parent),
-      m_outputDir(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) + QStringLiteral("/AmbienceFish"))
+      m_outputDir(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) + QStringLiteral("/AmbienceCrop"))
 {
 }
 
@@ -251,7 +251,7 @@ void Composer::save(const QString &source, const QVariantMap &layout)
         return;
     m_busy = true;
     emit busyChanged();
-    const QString target = QStringLiteral("%1/AmbienceFish-%2.jpg")
+    const QString target = QStringLiteral("%1/AmbienceCrop-%2.jpg")
             .arg(m_outputDir, QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss")));
     auto *watcher = new QFutureWatcher<QVariantMap>(this);
     connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {

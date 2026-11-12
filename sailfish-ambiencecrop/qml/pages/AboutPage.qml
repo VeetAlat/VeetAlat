@@ -24,7 +24,7 @@ Page {
             spacing: Theme.paddingMedium
 
             PageHeader {
-                title: "About AmbienceFish"
+                title: "About AmbienceCrop"
                 description: "Version " + page.version
             }
 
@@ -35,7 +35,7 @@ Page {
                 color: Theme.highlightColor
                 text: "Sailfish ambiences use a square picture, 2048 × 2048, and show only its middle: " +
                       "a tall strip when the phone is upright and a wide one when it's turned. " +
-                      "AmbienceFish lets you place a photo on that square yourself, shows exactly what each " +
+                      "AmbienceCrop lets you place a photo on that square yourself, shows exactly what each " +
                       "screen will see, and fills the rest with a blur of the photo, so the ambience " +
                       "shows what you chose."
             }
@@ -57,8 +57,8 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryHighlightColor
-                text: "Your photos stay on your phone. AmbienceFish reads the photo you choose, saves the " +
-                      "new picture in Pictures/AmbienceFish, and asks the phone's ambience service to make " +
+                text: "Your photos stay on your phone. AmbienceCrop reads the photo you choose, saves the " +
+                      "new picture in Pictures/AmbienceCrop, and asks the phone's ambience service to make " +
                       "the ambience. It has no network use, account or tracking."
             }
 

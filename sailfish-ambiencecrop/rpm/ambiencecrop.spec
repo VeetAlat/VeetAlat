@@ -1,4 +1,4 @@
-Name:       ambiencefish
+Name:       ambiencecrop
 Summary:    Frame a photo for an ambience, with a blur around it
 Version:    0.1.0
 Release:    1

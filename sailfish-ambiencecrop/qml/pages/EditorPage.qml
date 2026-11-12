@@ -1,6 +1,6 @@
 import QtQuick 2.5
 import Sailfish.Silica 1.0
-import AmbienceFish 1.0
+import AmbienceCrop 1.0
 import "../js/layout.js" as Layout
 
 // The square the ambience will use, with the photo on it: drag to move,

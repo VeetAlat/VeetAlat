@@ -1,4 +1,4 @@
-# AmbienceFish for Sailfish OS
+# AmbienceCrop for Sailfish OS
 
 Frame a photo for a Sailfish **ambience** exactly the way you want it.
 
@@ -8,7 +8,7 @@ a wide one when you turn it. The corners are never seen. So when you make
 an ambience from a photo, Settings crops it to a square, and the part you
 cared about often ends up cut off.
 
-AmbienceFish lets you put the photo on that square yourself. You see the
+AmbienceCrop lets you put the photo on that square yourself. You see the
 exact frames the phone will show, and the rest of the square is filled
 with a soft blur of the photo (or its colour, or black). Then it saves the
 picture and makes the ambience.
@@ -34,7 +34,7 @@ Made by Valatalo.
      both, or the blur showing when the phone is turned.
 3. **Save:**
    - **Where it goes:** a 2048 × 2048 JPEG (larger if the screen is
-     taller) in `Pictures/AmbienceFish`.
+     taller) in `Pictures/AmbienceCrop`.
    - **Make an ambience** hands it to the phone's ambience service, the
      same one the Gallery's ambience button uses. **Make it and use it
      now** also switches to it.
@@ -67,7 +67,7 @@ for that.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/ambiencefish-0.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/ambiencecrop-0.1.0-1.aarch64.rpm
 ```
 
 ## Tests

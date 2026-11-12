@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates the AmbienceFish icon: an ambience's square, its outside a soft
+"""Generates the AmbienceCrop icon: an ambience's square, its outside a soft
 blur of sunset colours, and in the middle the sharp, tall screen strip
 with a fish swimming in it; crop marks at the square's corners.
 
@@ -58,5 +58,5 @@ def build():
 '''
 
 
-open("icons/ambiencefish.svg", "w").write(build())
-print("wrote icons/ambiencefish.svg")
+open("icons/ambiencecrop.svg", "w").write(build())
+print("wrote icons/ambiencecrop.svg")

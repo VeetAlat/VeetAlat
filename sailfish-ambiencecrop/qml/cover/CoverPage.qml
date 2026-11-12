@@ -25,6 +25,6 @@ CoverBackground {
         wrapMode: Text.Wrap
         font.pixelSize: Theme.fontSizeLarge
         color: Theme.highlightColor
-        text: "AmbienceFish"
+        text: "AmbienceCrop"
     }
 }

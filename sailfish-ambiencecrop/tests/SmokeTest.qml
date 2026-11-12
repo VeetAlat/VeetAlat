@@ -139,7 +139,7 @@ Item {
                 if (!smoke.ready(!c.busy && stack.currentPage !== smoke.editor && !stack.busy, "the saved picture")) break
                 smoke.done = stack.currentPage
                 var path = smoke.done.path
-                smoke.check("saved in Pictures/AmbienceFish", path.indexOf(c.outputDir + "/AmbienceFish-") === 0 && /\.jpg$/.test(path))
+                smoke.check("saved in Pictures/AmbienceCrop", path.indexOf(c.outputDir + "/AmbienceCrop-") === 0 && /\.jpg$/.test(path))
                 var p = c.pixelAt(path, 0.5, 0.25)
                 smoke.check("the saved square is 2048 or more", p.width === p.height && p.width >= 2048)
                 smoke.check("the saved picture is turned and placed (red on top)", p.red > 180 && p.blue < 90)

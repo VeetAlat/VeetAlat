@@ -2,7 +2,7 @@
 Makefile
 *.o
 moc_*.cpp
-/ambiencefish
+/ambiencecrop
 documentation.list
 .qmake.stash
 RPMS/

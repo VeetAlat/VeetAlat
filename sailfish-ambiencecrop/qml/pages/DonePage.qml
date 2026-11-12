@@ -1,6 +1,6 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import AmbienceFish 1.0
+import AmbienceCrop 1.0
 
 // The finished square: make it an ambience (and switch to it, if wanted),
 // or open it in the Gallery.
@@ -71,7 +71,7 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryHighlightColor
-                text: "Saved in Pictures/AmbienceFish, 2048 × 2048 like Sailfish's own ambiences. " +
+                text: "Saved in Pictures/AmbienceCrop, 2048 × 2048 like Sailfish's own ambiences. " +
                       "If Settings asks you to crop it, keep the whole square."
             }
 
