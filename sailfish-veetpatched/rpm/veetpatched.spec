@@ -1,6 +1,6 @@
 Name:       veetpatched
 Summary:    Small changes to Sailfish OS, on and off with a switch
-Version:    0.2.3
+Version:    0.3.0
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -69,6 +69,18 @@ systemctl daemon-reload || :
 /usr/lib/systemd/system/veetpatched.service
 
 %changelog
+* Thu Nov 12 2026 Valatalo - 0.3.0-1
+- StatusBar, a new way to fit around the notch: left of it, StatusBar's
+  own clock and compact battery; right of it, the home screen's status
+  icons seen through a window cut to that side, which leaves out its
+  battery and percentage however a Sailfish version builds them. No more
+  overlap.
+- The compact battery gets its numbers from the first source that works:
+  MCE, a hidden copy of Sailfish's battery indicator, or the system
+  settings. With none, the home screen's own status area shows as before.
+- StatusBar's report (in VeetPatched's log) names the battery source and
+  which it tried.
+
 * Thu Nov 12 2026 Valatalo - 0.2.3-1
 - The app notices when the home screen is still showing older files than
   the patches (after updating VeetPatched, say) and offers to restart it;

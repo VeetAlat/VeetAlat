@@ -12,7 +12,12 @@ Item {
     property bool updatesEnabled: true
     property bool lockscreenMode
     property color color: Theme.primaryColor
-    readonly property var fake: parent && parent.parent ? parent.parent.fake : ({})
+    // The test's settings, on the Loader somewhere above.
+    readonly property var fake: {
+        var p = parent
+        while (p && p.fake === undefined) p = p.parent
+        return p ? p.fake : ({})
+    }
     property int cornerPadding: fake.corner
 
     width: parent.width
@@ -21,7 +26,7 @@ Item {
     Item {
         id: iconBar
         width: parent.width
-        height: battery.height + statusArea.parent.notchHeight
+        height: battery.height + 40
 
         Row {
             objectName: "leftIndicators"

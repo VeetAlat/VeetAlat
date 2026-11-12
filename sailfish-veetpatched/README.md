@@ -16,17 +16,30 @@ Made by Valatalo.
 
 ## How StatusBar fits around the notch
 
-Left of the notch: the clock at the left edge, like Android, then a
-compact battery, then the home screen's other left icons (profile, do
-not disturb, alarm).
-
-**The compact battery** shows the charge percentage inside a small
-battery, instead of the home screen's icon with the percentage beside
-it: well under half the width. The fill shows the charge, green while
-charging, red when low and amber in power save. It replaces the home
-screen's battery in the bar only, and if it can't load on some Sailfish
-version, the home screen's own battery stays. It reads everything from
-the home screen's own battery indicator, which it hides in the bar.
+- **Left of the notch is StatusBar's own:** the clock at the left edge,
+  like Android, then a compact battery. If they don't fit before the
+  notch, they shrink just enough to fit, to 60% at most.
+- **Right of the notch:** the home screen's own status icons (location,
+  VPN, Bluetooth, Wi-Fi, mobile signal), seen through a window cut to
+  that side. Its left icons (its battery and percentage, profile, do not
+  disturb, alarm) are left out that way, without depending on how a
+  Sailfish version builds them. On Sailfish 4.6 the right icons also
+  shrink if they'd reach the notch.
+- **The compact battery** shows the charge percentage inside a small
+  battery: under half the width of the home screen's icon with the
+  percentage beside it. The fill shows the charge, green while charging,
+  red when low and amber in power save.
+- **Where its numbers come from:** the first of these that works on the
+  phone: MCE, the power manager (`BatteryFromMce.qml`); a hidden copy of
+  Sailfish's own battery indicator (`BatteryFromIndicator.qml`); the
+  system settings' battery status (`BatteryFromSettings.qml`). A file
+  that doesn't load, or gives no charge within 4 s, is skipped. If none
+  works, the bar shows the home screen's whole status area, its battery
+  included, as before.
+- **Its report:** 8 s after the home screen starts, StatusBar reports the
+  notch, which battery source it uses (and which it tried), and the room
+  on each side. VeetPatched's Log page shows it the next time the app
+  checks.
 
 ## Restarting the home screen
 
@@ -119,7 +132,7 @@ then restart the phone. Uninstalling VeetPatched does the same first.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/veetpatched-0.2.3-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/veetpatched-0.3.0-1.aarch64.rpm
 ```
 
 ## Tests
@@ -127,7 +140,7 @@ devel-su pkcon install-local ~/Downloads/veetpatched-0.2.3-1.aarch64.rpm
 ```sh
 sh tests/test_helper.sh       # the helper: 89 checks
 tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK: 30 checks
-tests/bar-layout-test.sh      # StatusBar's layout and compact battery, in the SDK
+tests/bar-layout-test.sh      # StatusBar's layout, battery and its sources, in the SDK
 ```
 
 **The helper's tests:**
@@ -155,12 +168,17 @@ modules, with a stand-in for the home screen's private plugin.
 
 **The layout test** lays out the real bar file in the SDK over five notch
 shapes, from a small punch hole to a very wide notch, with a stand-in
-for the home screen's status area built like the real one. It checks
-that the clock, the battery, the left icons and the right icons never
-overlap each other or the notch, that a side only shrinks when it has
-to, and that everything stays vertically centred. It also checks the
-compact battery takes the original's place, its number and colours, and
-that a compact battery that can't load leaves the original in place.
+for the home screen's status area built like the real one. It checks:
+
+- the clock and the battery never overlap each other or the notch, and
+  only shrink when they have to;
+- the home screen's left icons are hidden and its right icons show,
+  clear of the notch;
+- the battery's number and colours follow its source;
+- a source that doesn't load, or gives no charge, is skipped for the
+  next, and with none the home screen's whole status area shows;
+- the three real sources load;
+- the report line.
 
 **Not testable here:** systemd running the helper on the phone (the units
 pass `systemd-analyze verify`), and the bar on the real screen.

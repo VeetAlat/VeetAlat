@@ -43,11 +43,11 @@ Page {
         }
     }
 
-    // StatusBar reports how it fitted 3 s after the home screen starts; the
+    // StatusBar reports how it fitted 8 s after the home screen starts; the
     // next check copies that into the log.
     Timer {
         id: afterRestart
-        interval: 6000
+        interval: 12000
         onTriggered: if (!page.patcher.busy) page.patcher.refresh()
     }
 

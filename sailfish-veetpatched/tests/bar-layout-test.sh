@@ -17,11 +17,9 @@ cp -r "$HERE/tests/bar/." "$WORK/"
 sed 's|import "file:///usr/share/lipstick-jolla-home-qt5/statusarea"|import "fake"|' \
     "$HERE/patches/statusbar/NotchStatusBar.qml" > "$WORK/NotchStatusBar.qml"
 grep -q 'import "fake"' "$WORK/NotchStatusBar.qml"
-cp "$HERE/patches/statusbar/CompactBattery.qml" "$WORK/"
-# A copy whose compact battery can't load, to check the original stays.
-mkdir "$WORK/broken"
-sed 's|import "fake"|import "../fake"|' "$WORK/NotchStatusBar.qml" > "$WORK/broken/NotchStatusBar.qml"
-echo 'this is not QML' > "$WORK/broken/CompactBattery.qml"
+for f in "$HERE"/patches/statusbar/*.qml; do
+    [ "$(basename "$f")" = NotchStatusBar.qml ] || cp "$f" "$WORK/"
+done
 chmod -R a+rwX "$WORK"
 
 docker run --rm -v "$WORK:/home/mersdk/bar" -w /home/mersdk/bar \
@@ -30,9 +28,10 @@ docker run --rm -v "$WORK:/home/mersdk/bar" -w /home/mersdk/bar \
             sb2 -t $TARGET sh -c 'g++ -o runner runner.cpp /usr/lib/libQt5QuickTest.so.5 && ./runner -input tst_barlayout.qml' 2>&1 |
             grep -v -E 'dconf|pixel ratio|DPI'
     " | tee "$WORK/out.log"
-# Expected here: StatusBar's report (checked below), and the broken
-# copy's own error. Any other warning fails the test.
+# Expected here: StatusBar's report (checked below), the broken test
+# source's own error, and the real battery sources finding no D-Bus in the
+# SDK. Any other warning fails the test.
 grep -q "Totals: .* 0 failed" "$WORK/out.log" &&
     ! grep -E "QWARN|qml: .*(Error|rror:)|TypeError|ReferenceError" "$WORK/out.log" |
-        grep -v -E "VeetPatched StatusBar: |broken/CompactBattery\.qml:1:1: Expected a qualified name id" | grep -q . &&
-    grep -q "test_report() qml: VeetPatched StatusBar: screen 560, notch 200+160x40, icon rows found, battery compact; left: room 148, .* (started [0-9:]*)" "$WORK/out.log"
+        grep -v -E "VeetPatched StatusBar: |Broken\.qml:1:1: Expected a qualified name id|org\.nemomobile\.dbus: |[Mm]ce" | grep -q . &&
+    grep -q "test_report() qml: VeetPatched StatusBar: screen 560, notch 200+160x40, battery from FakeBattery (tried: NoCharge gave no charge); left: room 148, needs [0-9]*, scale 1.00; right icons found, .* (started [0-9:]*)" "$WORK/out.log"

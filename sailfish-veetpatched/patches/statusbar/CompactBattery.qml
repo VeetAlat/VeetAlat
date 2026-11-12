@@ -4,10 +4,8 @@
  * so the clock has room left of the notch.
  *
  * The fill shows the charge: green while charging, red when low, amber in
- * power save mode, white otherwise. Everything comes from the home
- * screen's own battery indicator (hidden in the bar), so there's nothing
- * here that a Sailfish update could move. Loaded through a Loader: if it
- * fails, the home screen's own battery stays instead.
+ * power save mode, white otherwise. The numbers come from "source", one of
+ * the BatteryFrom*.qml files (whichever works on this phone).
  */
 import QtQuick 2.6
 import Sailfish.Silica 1.0
@@ -15,18 +13,13 @@ import Sailfish.Silica 1.0
 Item {
     id: battery
 
-    // The home screen's BatteryStatusIndicator: its text is "57%", and its
-    // icon is icon-status-charge, -battery-warning, -powersave or -battery.
-    property Item original
-    readonly property string iconName: original && original.icon ? String(original.icon) : ""
+    // { percent, charging, low, powerSave } from a BatteryFrom*.qml.
+    property QtObject source
 
-    property int percent: {
-        var n = original ? parseInt(original.text, 10) : NaN
-        return isNaN(n) ? -1 : n
-    }
-    property bool charging: original ? original.isCharging === true || iconName.indexOf("icon-status-charge") >= 0 : false
-    property bool low: iconName.indexOf("battery-warning") >= 0
-    property bool powerSave: iconName.indexOf("powersave") >= 0
+    readonly property int percent: source ? source.percent : -1
+    readonly property bool charging: source ? source.charging : false
+    readonly property bool low: source ? source.low : false
+    readonly property bool powerSave: source ? source.powerSave : false
     property color color: "white"
 
     readonly property real line: Math.max(1, Math.round(Theme.pixelRatio * 1.5))

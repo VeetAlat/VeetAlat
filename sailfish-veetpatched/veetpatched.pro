@@ -16,7 +16,7 @@ helper.files = helper/veetpatched-helper
 helper.path = /usr/libexec/veetpatched
 units.files = systemd/veetpatched.path systemd/veetpatched.service
 units.path = /usr/lib/systemd/system
-statusbar.files = patches/statusbar/patch.conf patches/statusbar/block.qml patches/statusbar/NotchStatusBar.qml patches/statusbar/CompactBattery.qml
+statusbar.files = patches/statusbar/patch.conf patches/statusbar/block.qml patches/statusbar/NotchStatusBar.qml patches/statusbar/CompactBattery.qml patches/statusbar/BatteryFromMce.qml patches/statusbar/BatteryFromIndicator.qml patches/statusbar/BatteryFromSettings.qml
 statusbar.path = /usr/share/veetpatched/patches/statusbar
 INSTALLS += helper units statusbar
 
