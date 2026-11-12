@@ -90,7 +90,7 @@ Item {
                 smoke.check("it says to restart the home screen", /StatusBar is on. Restart the home screen/.test(smoke.page.note)
                             && smoke.page.restartPending)
                 smoke.check("the log says what was done", /statusbar: applied/.test(p.log))
-                smoke.check("app log: started, with its patches", smoke.logged("app", "INFO", /^VeetPatched 0\.2\.0 started; patches: statusbar$/))
+                smoke.check("app log: started, with its patches", smoke.logged("app", "INFO", /^VeetPatched 0\.2\.1 started; patches: statusbar$/))
                 smoke.check("app log: the request it sent", smoke.logged("app", "INFO", /^sent request #\d+: apply statusbar$/))
                 smoke.check("app log: the answer and how long it took", smoke.logged("app", "INFO", /^request #\d+ answered after \d+ ms: statusbar applied$/))
                 smoke.check("helper log: the steps, with the file's checksum",

@@ -14,6 +14,19 @@ Made by Valatalo.
   screen. Silica apps already keep that strip clear; full-screen apps
   lose it, as Android apps do.
 
+## How StatusBar fits around the notch
+
+Left of the notch: the clock at the left edge, like Android, then the
+home screen's own left icons (battery, profile, do not disturb, alarm).
+Right of it: the right icons (location, VPN, Bluetooth, Wi-Fi, mobile
+signal) at the right edge. If one side doesn't fit next to the notch, it
+shrinks just enough to fit, to 60% at most. Three seconds after the
+home screen starts, it logs how it fitted:
+
+```sh
+journalctl --user -u lipstick | grep StatusBar
+```
+
 ## How it works
 
 - **The app** (sandboxed, no permissions) can't change system files.
@@ -89,7 +102,7 @@ then restart the phone. Uninstalling VeetPatched does the same first.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/veetpatched-0.2.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/veetpatched-0.2.1-1.aarch64.rpm
 ```
 
 ## Tests
@@ -97,6 +110,7 @@ devel-su pkcon install-local ~/Downloads/veetpatched-0.2.0-1.aarch64.rpm
 ```sh
 sh tests/test_helper.sh       # the helper: 72 checks
 tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK: 29 checks
+tests/bar-layout-test.sh      # StatusBar's layout over five notch shapes, in the SDK
 ```
 
 **The helper's tests:**
@@ -121,6 +135,13 @@ helper's steps, the failed home screen restart and a helper that never
 answers as ERRORs, and the Log page's *Problems only* filter.
 The patched file and the bar also compile against the SDK's Sailfish
 modules, with a stand-in for the home screen's private plugin.
+
+**The layout test** lays out the real bar file in the SDK over five notch
+shapes, from a small punch hole to a very wide notch, with a stand-in
+for the home screen's status area built like the real one. It checks
+that the clock, the left icons and the right icons never overlap each
+other or the notch, that a side only shrinks when it has to, and that
+everything stays vertically centred.
 
 **Not testable here:** systemd running the helper on the phone (the units
 pass `systemd-analyze verify`), and the bar on the real screen.

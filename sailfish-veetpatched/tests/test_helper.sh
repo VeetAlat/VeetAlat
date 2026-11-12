@@ -94,7 +94,7 @@ fresh AppLayer-5.2.qml
 mkdir -p "$W/root/etc"; printf 'NAME="Sailfish OS"\nVERSION_ID=5.2.0.15\n' > "$W/root/etc/os-release"
 echo "apply statusbar 50" > "$W/out/request"; run serve
 grep -q "INFO  request #50: apply statusbar" "$L"; check "log: the request" $?
-grep -q "INFO  context: Sailfish OS 5.2.0.15, .*helper 0.2.0" "$L"; check "log: the phone's context" $?
+grep -q "INFO  context: Sailfish OS 5.2.0.15, .*helper $(sed -n 's/^VERSION=//p' "$H")" "$L"; check "log: the phone's context" $?
 grep -q "INFO  statusbar: applying to /usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml" "$L"; check "log: what it changes" $?
 grep -Eq "INFO  statusbar: /usr/share/.*AppLayer.qml is [0-9]+ lines, [0-9]+ bytes, sha256 [0-9a-f]{12}" "$L"; check "log: the file before, with its checksum" $?
 grep -q "INFO  statusbar: backed up to" "$L" && grep -Eq "INFO  statusbar: block goes in before line [0-9]+" "$L"; check "log: the backup and where the block goes" $?

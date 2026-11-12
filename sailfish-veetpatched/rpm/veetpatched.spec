@@ -1,6 +1,6 @@
 Name:       veetpatched
 Summary:    Small changes to Sailfish OS, on and off with a switch
-Version:    0.2.0
+Version:    0.2.1
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -69,6 +69,13 @@ systemctl daemon-reload || :
 /usr/lib/systemd/system/veetpatched.service
 
 %changelog
+* Thu Nov 12 2026 Valatalo - 0.2.1-1
+- StatusBar: the clock and the battery no longer overlap. The clock goes
+  at the left edge with the home screen's left icons (battery, profile,
+  do not disturb, alarm) right after it; if they don't fit before the
+  notch they shrink to fit (to 60% at most), and so do the right icons.
+  The home screen's journal gets one line on how it fitted.
+
 * Thu Nov 12 2026 Valatalo - 0.2.0-1
 - Proper logging. The helper logs every step with a level (INFO, WARN,
   ERROR), the files' sizes and checksums before and after, failing

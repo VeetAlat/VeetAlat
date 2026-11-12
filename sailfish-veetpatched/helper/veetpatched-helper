@@ -34,7 +34,7 @@
 set -u
 umask 022
 
-VERSION=0.2.0
+VERSION=0.2.1
 ROOT=${VP_ROOT:-}
 PATCHES=${VP_PATCHES:-/usr/share/veetpatched/patches}
 STATE=${VP_STATE:-/var/lib/veetpatched}
