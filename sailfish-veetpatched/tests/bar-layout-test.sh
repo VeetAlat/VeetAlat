@@ -30,8 +30,9 @@ docker run --rm -v "$WORK:/home/mersdk/bar" -w /home/mersdk/bar \
             sb2 -t $TARGET sh -c 'g++ -o runner runner.cpp /usr/lib/libQt5QuickTest.so.5 && ./runner -input tst_barlayout.qml' 2>&1 |
             grep -v -E 'dconf|pixel ratio|DPI'
     " | tee "$WORK/out.log"
-# Expected here: no system D-Bus for the battery's sources, and the broken
+# Expected here: StatusBar's report (checked below), and the broken
 # copy's own error. Any other warning fails the test.
 grep -q "Totals: .* 0 failed" "$WORK/out.log" &&
     ! grep -E "QWARN|qml: .*(Error|rror:)|TypeError|ReferenceError" "$WORK/out.log" |
-        grep -v -E "org\.nemomobile\.dbus: |broken/CompactBattery\.qml:1:1: Expected a qualified name id" | grep -q .
+        grep -v -E "VeetPatched StatusBar: |broken/CompactBattery\.qml:1:1: Expected a qualified name id" | grep -q . &&
+    grep -q "test_report() qml: VeetPatched StatusBar: screen 560, notch 200+160x40, icon rows found, battery compact; left: room 148, .* (started [0-9:]*)" "$WORK/out.log"

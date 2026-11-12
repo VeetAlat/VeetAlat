@@ -4,22 +4,29 @@
  * so the clock has room left of the notch.
  *
  * The fill shows the charge: green while charging, red when low, amber in
- * power save mode, white otherwise. Loaded through a Loader: if it fails
- * on some Sailfish version, the home screen's own battery stays instead.
+ * power save mode, white otherwise. Everything comes from the home
+ * screen's own battery indicator (hidden in the bar), so there's nothing
+ * here that a Sailfish update could move. Loaded through a Loader: if it
+ * fails, the home screen's own battery stays instead.
  */
 import QtQuick 2.6
 import Sailfish.Silica 1.0
-import org.nemomobile.systemsettings 1.0
-import Nemo.Mce 1.0
 
 Item {
     id: battery
 
-    // From the phone; tests set these.
-    property int percent: batteryStatus.chargePercentage
-    property bool charging: batteryStatus.chargerStatus == BatteryStatus.Connected
-    property bool low: batteryStatus.status == BatteryStatus.Low || batteryStatus.status == BatteryStatus.Empty
-    property bool powerSave: powerSaveMode.active
+    // The home screen's BatteryStatusIndicator: its text is "57%", and its
+    // icon is icon-status-charge, -battery-warning, -powersave or -battery.
+    property Item original
+    readonly property string iconName: original && original.icon ? String(original.icon) : ""
+
+    property int percent: {
+        var n = original ? parseInt(original.text, 10) : NaN
+        return isNaN(n) ? -1 : n
+    }
+    property bool charging: original ? original.isCharging === true || iconName.indexOf("icon-status-charge") >= 0 : false
+    property bool low: iconName.indexOf("battery-warning") >= 0
+    property bool powerSave: iconName.indexOf("powersave") >= 0
     property color color: "white"
 
     readonly property real line: Math.max(1, Math.round(Theme.pixelRatio * 1.5))
@@ -30,9 +37,6 @@ Item {
 
     height: Math.round(Theme.iconSizeExtraSmall * 0.75)
     width: body.width + nub.width
-
-    BatteryStatus { id: batteryStatus }
-    McePowerSaveMode { id: powerSaveMode }
 
     Rectangle {
         id: body

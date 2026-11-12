@@ -25,15 +25,21 @@ battery, instead of the home screen's icon with the percentage beside
 it: well under half the width. The fill shows the charge, green while
 charging, red when low and amber in power save. It replaces the home
 screen's battery in the bar only, and if it can't load on some Sailfish
-version, the home screen's own battery stays.
+version, the home screen's own battery stays. It reads everything from
+the home screen's own battery indicator, which it hides in the bar.
+
+## Restarting the home screen
+
+Changes to the home screen only show after it restarts. The app offers
+it after switching a patch, and also whenever the helper finds that the
+home screen started before the patches last changed (after updating
+VeetPatched, for example). It's always in the pull-down menu too.
 Right of it: the right icons (location, VPN, Bluetooth, Wi-Fi, mobile
 signal) at the right edge. If one side doesn't fit next to the notch, it
 shrinks just enough to fit, to 60% at most. Three seconds after the
-home screen starts, it logs how it fitted:
-
-```sh
-journalctl --user -u lipstick | grep StatusBar
-```
+home screen starts, it reports how it fitted (the notch, the room on each
+side, how much it shrank, and which battery it shows); VeetPatched's Log
+page shows it the next time the app checks.
 
 ## How it works
 
@@ -93,6 +99,9 @@ pull down → **Log**.
   devel-su journalctl -t veetpatched
   ```
 
+- **The home screen's own lines** about the patches (StatusBar's report,
+  QML errors in its files) are copied from the journal into the log, each
+  once, when the app checks.
 - **The app's own log** is `app.log` in
   `~/.local/share/org.veetalat/veetpatched/` (rotated at 128 KB).
 
@@ -110,14 +119,14 @@ then restart the phone. Uninstalling VeetPatched does the same first.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/veetpatched-0.2.2-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/veetpatched-0.2.3-1.aarch64.rpm
 ```
 
 ## Tests
 
 ```sh
-sh tests/test_helper.sh       # the helper: 72 checks
-tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK: 29 checks
+sh tests/test_helper.sh       # the helper: 89 checks
+tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK: 30 checks
 tests/bar-layout-test.sh      # StatusBar's layout and compact battery, in the SDK
 ```
 

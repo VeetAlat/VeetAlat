@@ -74,11 +74,14 @@ Item {
             tryCompare(compact, "status", Loader.Ready)
             verify(bar.compactBattery && compact.visible, "the compact battery takes the original's place")
             verify(!find(bar, "battery").visible, "the home screen's battery is hidden in the bar")
-            compact.item.percent = 100
-            compare(find(compact.item, "percent").text, "100")
-            compact.item.percent = -1
+            compare(compact.item.percent, 57, "it reads the home screen's battery")
+            compare(find(compact.item, "percent").text, "57")
+            var original = find(bar, "battery")
+            original.text = "100%"
+            compare(find(compact.item, "percent").text, "100", "and follows it")
+            original.text = ""
             compare(find(compact.item, "percent").text, "", "no number while the charge is unknown")
-            compact.item.percent = 57
+            original.text = "57%"
             // The home screen's: an icon, a gap and "100%" (about two em).
             var original = Theme.iconSizeExtraSmall + Theme.paddingSmall + 2 * Theme.fontSizeSmall
             verify(compact.width < original / 2, "it's under half the width of the original (" + compact.width + " vs " + original + ")")
@@ -113,15 +116,26 @@ Item {
             var bar = layout({ screen: 560, x: 265, w: 30, corner: 24, battery: 34, left: 1, right: 3 })
             var compact = find(bar, "compactBattery")
             tryCompare(compact, "status", Loader.Ready)
-            var b = compact.item
-            b.charging = false; b.low = false; b.powerSave = false
+            // As the home screen's battery shows them: its icon and isCharging.
+            var b = compact.item, original = find(bar, "battery")
             verify(Qt.colorEqual(b.fillColor, Qt.rgba(1, 1, 1, 0.35)), "normally a light fill")
-            b.powerSave = true
+            original.icon = "image://theme/icon-status-powersave"
             verify(Qt.colorEqual(b.fillColor, "#c98a00"), "amber in power save")
-            b.low = true
+            original.icon = "image://theme/icon-status-battery-warning"
             verify(Qt.colorEqual(b.fillColor, "#d93030"), "red when low")
-            b.charging = true
-            verify(Qt.colorEqual(b.fillColor, "#2e9e4f"), "green while charging, whatever else")
+            original.isCharging = true
+            original.icon = "image://theme/icon-status-charge"
+            verify(Qt.colorEqual(b.fillColor, "#2e9e4f"), "green while charging")
+            original.isCharging = false
+            original.icon = "image://theme/icon-status-battery"
+            verify(Qt.colorEqual(b.fillColor, Qt.rgba(1, 1, 1, 0.35)), "and back")
+        }
+
+        function test_report() {
+            // The line for the journal, 3 s after start (the script checks it).
+            var bar = layout({ screen: 560, x: 200, w: 160, corner: 40, battery: 34, left: 1, right: 3 })
+            wait(3500)
+            verify(bar.compactBattery)
         }
 
         function test_broken_compact_battery() {

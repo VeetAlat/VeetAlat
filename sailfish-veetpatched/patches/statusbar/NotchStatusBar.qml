@@ -89,24 +89,39 @@ Item {
             leftRow = rows[0]
             rightRow = rows[rows.length - 1]
             var icons = leftRow.children
-            for (var i = 0; i < icons.length; i++)
-                if (icons[i].hasOwnProperty("usbPreparingMode")) originalBattery = icons[i]
+            for (var i = 0; i < icons.length; i++) {
+                var c = icons[i]
+                if (c.hasOwnProperty("text") && (c.hasOwnProperty("isCharging") || c.hasOwnProperty("usbPreparingMode")))
+                    originalBattery = c
+            }
         }
         report.start()
     }
 
-    // One line in the home screen's journal, to see how it fitted:
-    // journalctl --user -u lipstick | grep StatusBar
+    // One line in the home screen's journal, which VeetPatched copies into
+    // its log (a warning, so it isn't filtered out like debug output).
+    readonly property string startedAt: Qt.formatTime(new Date(), "hh:mm:ss")
+    function describe(item) {
+        if (!item) return "none"
+        var kids = []
+        for (var i = 0; i < item.children.length; i++)
+            kids.push(String(item.children[i]).replace(/_QMLTYPE_\d+|_QML_\d+|\(0x[0-9a-f]+\)/g, ""))
+        return kids.join(" ")
+    }
     Timer {
         id: report
         interval: 3000
-        onTriggered: console.log("VeetPatched StatusBar: screen " + bar.width + ", notch " + bar.notchX + "+" + bar.notchWidth
-                                 + "x" + bar.notchHeight + ", icon rows " + (bar.leftRow ? "found" : "not found")
-                                 + ", battery " + (bar.compactBattery ? "compact" : "the home screen's")
-                                 + "; left: room " + Math.round(bar.leftRoom) + ", needs " + Math.round(bar.leftNeeded)
-                                 + ", scale " + bar.leftScale.toFixed(2)
-                                 + "; right: room " + Math.round(bar.rightRoom) + ", needs " + (bar.rightRow ? Math.round(bar.rowWidth(bar.rightRow)) : 0)
-                                 + ", scale " + bar.rightScale.toFixed(2))
+        onTriggered: console.warn("VeetPatched StatusBar: screen " + bar.width + ", notch " + bar.notchX + "+" + bar.notchWidth
+                                  + "x" + bar.notchHeight
+                                  + ", icon rows " + (bar.leftRow ? "found" : "not found")
+                                  + ", battery " + (bar.compactBattery ? "compact"
+                                                    : bar.originalBattery ? "the home screen's (compact one: " + ["off", "loaded", "loading", "failed"][battery.status] + ")"
+                                                    : "the home screen's (not found among: " + bar.describe(bar.leftRow) + ")")
+                                  + "; left: room " + Math.round(bar.leftRoom) + ", needs " + Math.round(bar.leftNeeded)
+                                  + ", scale " + bar.leftScale.toFixed(2)
+                                  + "; right: room " + Math.round(bar.rightRoom) + ", needs " + (bar.rightRow ? Math.round(bar.rowWidth(bar.rightRow)) : 0)
+                                  + ", scale " + bar.rightScale.toFixed(2)
+                                  + " (started " + bar.startedAt + ")")
     }
 
     Rectangle {
@@ -205,6 +220,7 @@ Item {
             active: bar.originalBattery !== null
             visible: battery.status === Loader.Ready   // "status" alone would be the StatusArea's id
             source: "CompactBattery.qml"
+            onLoaded: item.original = Qt.binding(function() { return bar.originalBattery })
         }
     }
 }

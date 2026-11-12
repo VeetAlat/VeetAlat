@@ -34,7 +34,11 @@ Item {
             Rectangle {
                 id: battery
                 objectName: "battery"
-                property bool usbPreparingMode   // as the real BatteryStatusIndicator has
+                // As the real BatteryStatusIndicator has them.
+                property bool usbPreparingMode
+                property bool isCharging
+                property string text: "57%"
+                property url icon: "image://theme/icon-status-battery"
                 width: Theme.iconSizeExtraSmall / 2 + Theme.paddingSmall + statusArea.fake.battery
                 height: Theme.iconSizeExtraSmall
                 color: "#44aa44"

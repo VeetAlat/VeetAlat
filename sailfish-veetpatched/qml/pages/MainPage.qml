@@ -10,6 +10,8 @@ Page {
 
     property Patcher patcher
     property bool restartPending: false   // a change the home screen hasn't shown yet
+    // It's showing older files than the patches' (after an update, say).
+    readonly property bool homeStale: patcher !== null && patcher.home === "stale"
 
     allowedOrientations: Orientation.All
 
@@ -34,8 +36,19 @@ Page {
             page.note = page.message(action, result)
             page.noteIsError = !result.ok
             if (result.ok && (action === "apply" || action === "unapply")) page.restartPending = true
-            if (result.ok && action === "restart-home") page.restartPending = false
+            if (result.ok && action === "restart-home") {
+                page.restartPending = false
+                afterRestart.start()
+            }
         }
+    }
+
+    // StatusBar reports how it fitted 3 s after the home screen starts; the
+    // next check copies that into the log.
+    Timer {
+        id: afterRestart
+        interval: 6000
+        onTriggered: if (!page.patcher.busy) page.patcher.refresh()
     }
 
     Component.onCompleted: patcher.refresh()
@@ -53,6 +66,11 @@ Page {
             MenuItem {
                 text: "Log"
                 onClicked: pageStack.push(Qt.resolvedUrl("LogPage.qml"), { patcher: page.patcher })
+            }
+            MenuItem {
+                text: "Restart home screen"
+                enabled: !page.patcher.busy
+                onClicked: page.patcher.restartHome()
             }
             MenuItem {
                 text: "Check again"
@@ -118,8 +136,17 @@ Page {
                 text: page.note
             }
 
+            Label {
+                visible: page.homeStale && !page.restartPending && !page.noteIsError
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                wrapMode: Text.Wrap
+                color: Theme.highlightColor
+                text: "The home screen is still showing the patches as they were before they changed. Restart it to see them as they are now."
+            }
+
             Button {
-                visible: page.restartPending
+                visible: page.restartPending || page.homeStale
                 anchors.horizontalCenter: parent.horizontalCenter
                 preferredWidth: Theme.buttonWidthLarge
                 text: "Restart home screen"

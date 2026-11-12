@@ -27,6 +27,10 @@ class Patcher : public QObject
     Q_PROPERTY(QVariantList logEntries READ logEntries NOTIFY logChanged)
     // False when the helper didn't answer in time.
     Q_PROPERTY(bool helperAnswers READ helperAnswers NOTIFY helperAnswersChanged)
+    // The home screen: "stale" when it's still showing older files than the
+    // patches' (it needs a restart), "current", "unknown" (not running), or
+    // "" before the helper has said.
+    Q_PROPERTY(QString home READ home NOTIFY homeChanged)
     Q_PROPERTY(QString dataDir READ dataDir WRITE setDataDir NOTIFY dataDirChanged)
     Q_PROPERTY(int timeout MEMBER m_timeout NOTIFY timeoutChanged)
 
@@ -40,6 +44,7 @@ public:
     QString log() const;
     QVariantList logEntries() const { return m_logEntries; }
     bool helperAnswers() const { return m_helperAnswers; }
+    QString home() const { return m_home; }
     QString dataDir() const { return m_dataDir; }
     void setDataDir(const QString &dir);
 
@@ -56,6 +61,7 @@ signals:
     void lastResultChanged();
     void logChanged();
     void helperAnswersChanged();
+    void homeChanged();
     void dataDirChanged();
     void timeoutChanged();
     void answered(const QString &action, const QVariantMap &result);
@@ -72,6 +78,7 @@ private:
     QVariantMap m_lastResult;
     QVariantList m_logEntries;
     bool m_helperAnswers = true;
+    QString m_home;
     QString m_dataDir;
     QString m_patchesDir;
     QString m_action;

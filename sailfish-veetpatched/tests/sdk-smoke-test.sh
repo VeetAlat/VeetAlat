@@ -42,7 +42,13 @@ docker run --rm -v "$WORK/app:/home/mersdk/src" -w /home/mersdk/src \
         cp tests/fixtures/AppLayer-5.2.qml \$FAKE/usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml
         OUT=/home/mersdk/.local/share/org.veetalat/veetpatched
         mkdir -p \$OUT
-        sb2 -t $TARGET sh -c \"while true; do [ -e \$OUT/request ] && VP_ROOT=\$FAKE VP_STATE=/home/mersdk/vpstate VP_OUT=\$OUT VP_USER=mersdk /usr/libexec/veetpatched/veetpatched-helper serve; sleep 0.2; done\" &
+        # A home screen that started long before the patch file was copied.
+        PROC=/home/mersdk/fakeproc
+        mkdir -p \$PROC/4242
+        printf 'btime %s\\n' \$(( \$(date +%s) - 1000 )) > \$PROC/stat
+        echo lipstick > \$PROC/4242/comm
+        echo '4242 (lipstick) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 100 0 0' > \$PROC/4242/stat
+        sb2 -t $TARGET sh -c \"while true; do [ -e \$OUT/request ] && VP_PROC=\$PROC VP_ROOT=\$FAKE VP_STATE=/home/mersdk/vpstate VP_OUT=\$OUT VP_USER=mersdk /usr/libexec/veetpatched/veetpatched-helper serve; sleep 0.2; done\" &
         WATCH=\$!
         VEETPATCHED_NO_WINDOW=1 QT_LOGGING_TO_CONSOLE=1 QT_QPA_PLATFORM=minimal timeout 120 \
             sb2 -t $TARGET /usr/bin/veetpatched 2>&1 | grep -v -E 'dconf|pixel ratio|DPI|^\$' || true

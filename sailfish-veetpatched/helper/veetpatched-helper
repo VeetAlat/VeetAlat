@@ -28,13 +28,20 @@
 # in log.1) and to the system journal (journalctl -t veetpatched). Requests
 # that are refused are logged without their contents.
 #
+# The home screen: every answer says whether it's running files older than
+# the patches ("home stale": it needs a restart to show them). A status
+# request also copies the home screen's own lines about our patches from
+# the journal into the log (StatusBar's report, QML errors in our files).
+#
 # For the tests, VP_ROOT, VP_PATCHES, VP_STATE, VP_OUT and VP_USER point it
-# at copies instead of the system, and VP_SYSLOG=0 keeps it out of the journal.
+# at copies instead of the system, VP_PROC at a stand-in for /proc,
+# VP_JOURNAL at a file standing in for the journal, and VP_SYSLOG=0 keeps
+# it out of the journal.
 
 set -u
 umask 022
 
-VERSION=0.2.2
+VERSION=0.2.3
 ROOT=${VP_ROOT:-}
 PATCHES=${VP_PATCHES:-/usr/share/veetpatched/patches}
 STATE=${VP_STATE:-/var/lib/veetpatched}
@@ -43,6 +50,8 @@ OUT=${VP_OUT:-/home/$USER_NAME/.local/share/org.veetalat/veetpatched}
 LOG=$STATE/log
 LOG_MAX=262144
 SYSLOG=${VP_SYSLOG:-1}
+PROC=${VP_PROC:-/proc}
+JOURNAL=${VP_JOURNAL:-}
 
 # log LEVEL text...
 log() {
@@ -240,6 +249,87 @@ status_lines() {
             echo "patch $id not-applied"
         fi
     done
+    home_line
+}
+
+# When the home screen (lipstick) started, in seconds since 1970, from the
+# kernel's own start time; nothing if it isn't running.
+home_started() {
+    btime=$(sed -n 's/^btime //p' "$PROC/stat" 2> /dev/null)
+    [ -n "$btime" ] || return 0
+    tck=$(getconf CLK_TCK 2> /dev/null || echo 100)
+    best=
+    for d in "$PROC"/[0-9]*; do
+        [ "$(cat "$d/comm" 2> /dev/null)" = lipstick ] || continue
+        # Field 22 of stat, the 20th after the ")" that ends the name.
+        st=$(sed 's/^.*) //' "$d/stat" 2> /dev/null | awk '{ print $20 }')
+        case "$st" in ""|*[!0-9]*) continue ;; esac
+        t=$((btime + st / tck))
+        if [ -z "$best" ] || [ "$t" -gt "$best" ]; then best=$t; fi
+    done
+    echo "$best"
+}
+
+# "home stale" if a patched file, or an applied patch's own files (after an
+# update of VeetPatched), changed after the home screen started: it's still
+# showing the old ones. Else "home current", or "home unknown" if it isn't
+# running. Change times, not modification times: an RPM keeps the build's.
+home_line() {
+    mkdir -p "$STATE"
+    started=$(home_started)
+    if [ -z "$started" ]; then
+        state="home unknown"
+    else
+        newest=0
+        for dir in "$PATCHES"/*/; do
+            id=$(basename "$dir")
+            valid_id "$id" || continue
+            load "$id"
+            for f in "$T" "$PATCHES/$id"/*; do
+                [ -f "$f" ] || continue
+                [ "$f" = "$T" ] || is_applied "$id" || continue
+                c=$(stat -c %Z "$f" 2> /dev/null) || continue
+                if [ "$c" -gt "$newest" ]; then newest=$c; fi
+            done
+        done
+        if [ "$newest" -gt "$started" ]; then state="home stale"; else state="home current"; fi
+    fi
+    if [ "$state" != "$(cat "$STATE/home-state" 2> /dev/null)" ]; then
+        echo "$state" > "$STATE/home-state"
+        case "$state" in
+            "home stale") log INFO "home screen: started $(date -d "@$started" '+%F %T' 2> /dev/null || echo "at $started"), before the patches last changed: it needs a restart to show them" ;;
+            "home current") log INFO "home screen: up to date with the patches" ;;
+            *) log WARN "home screen: lipstick isn't running" ;;
+        esac
+    fi
+    echo "$state"
+}
+
+# The home screen's own lines about our patches, from this boot's journal
+# into the log, each once: StatusBar's report on how it fitted, and QML
+# errors in our files (WARN).
+home_journal() {
+    mkdir -p "$STATE"
+    seen="$STATE/home-lines"
+    boot="boot $(cat "$PROC/sys/kernel/random/boot_id" 2> /dev/null)"
+    [ "$(head -n 1 "$seen" 2> /dev/null)" = "$boot" ] || echo "$boot" > "$seen"
+    if [ -n "$JOURNAL" ]; then
+        cat "$JOURNAL"
+    else
+        journalctl -b --no-pager -o cat -n 20000 2> /dev/null
+    fi | grep -E "VeetPatched StatusBar|/usr/share/veetpatched/patches/" | tail -n 20 > "$STATE/home-new"
+    while IFS= read -r l; do
+        grep -qxF -- "$l" "$seen" && continue
+        echo "$l" >> "$seen"
+        case "$l" in
+            *"VeetPatched StatusBar:"*) log INFO "home screen: $(printf '%s' "$l" | sed 's/^.*VeetPatched StatusBar: /StatusBar: /' | cut -c 1-400)" ;;
+            *) log WARN "home screen: $(printf '%s' "$l" | cut -c 1-400)" ;;
+        esac
+    done < "$STATE/home-new"
+    rm -f "$STATE/home-new"
+    if [ "$(wc -l < "$seen")" -gt 200 ]; then
+        { head -n 1 "$seen"; tail -n 100 "$seen"; } > "$seen.tmp" && mv "$seen.tmp" "$seen"
+    fi
 }
 
 restart_home() {
@@ -332,6 +422,7 @@ serve() {
             fi
             ;;
         status)
+            home_journal
             result="- ok"
             ;;
         restart-home)

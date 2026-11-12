@@ -78,6 +78,8 @@ Item {
                 if (!smoke.ready(!p.busy, "the helper's first answer")) break
                 smoke.check("the helper answers", p.helperAnswers && p.lastResult.ok)
                 smoke.check("StatusBar starts off", smoke.state() === "not-applied")
+                smoke.check("the home screen is older than the patched file: it offers a restart",
+                            p.home === "stale" && smoke.page.homeStale)
                 var sw = smoke.findSwitch(smoke.page)
                 smoke.check("its switch is on the page, off", sw !== null && !sw.checked && sw.enabled)
                 sw.clicked(null)
@@ -90,7 +92,7 @@ Item {
                 smoke.check("it says to restart the home screen", /StatusBar is on. Restart the home screen/.test(smoke.page.note)
                             && smoke.page.restartPending)
                 smoke.check("the log says what was done", /statusbar: applied/.test(p.log))
-                smoke.check("app log: started, with its patches", smoke.logged("app", "INFO", /^VeetPatched 0\.2\.2 started; patches: statusbar$/))
+                smoke.check("app log: started, with its patches", smoke.logged("app", "INFO", /^VeetPatched 0\.2\.3 started; patches: statusbar$/))
                 smoke.check("app log: the request it sent", smoke.logged("app", "INFO", /^sent request #\d+: apply statusbar$/))
                 smoke.check("app log: the answer and how long it took", smoke.logged("app", "INFO", /^request #\d+ answered after \d+ ms: statusbar applied$/))
                 smoke.check("helper log: the steps, with the file's checksum",

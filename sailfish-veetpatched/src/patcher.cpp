@@ -28,7 +28,7 @@ QString confValue(const QString &conf, const QString &key)
     return m.hasMatch() ? m.captured(1) : QString();
 }
 
-const char *const VERSION = "0.2.2";
+const char *const VERSION = "0.2.3";
 const qint64 APP_LOG_MAX = 131072;
 
 // "2026-11-12 17:25:20 INFO  text" lines into entries.
@@ -218,6 +218,12 @@ void Patcher::poll()
             result.insert(QStringLiteral("state"), state);
             result.insert(QStringLiteral("message"), QStringList(parts.mid(2)).join(QLatin1Char(' ')));
             result.insert(QStringLiteral("ok"), state != QStringLiteral("failed"));
+        } else if (line.startsWith(QStringLiteral("home "))) {
+            const QString home = line.mid(5).trimmed();
+            if (home != m_home) {
+                m_home = home;
+                emit homeChanged();
+            }
         } else if (line.startsWith(QStringLiteral("patch "))) {
             const QStringList parts = line.split(QLatin1Char(' '));
             states.insert(parts.value(1), parts.value(2));
