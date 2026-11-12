@@ -1,58 +1,78 @@
 #!/usr/bin/env python3
-"""Generates the AmbienceCrop icon: an ambience's square, its outside a soft
-blur of sunset colours, and in the middle the sharp, tall screen strip
-with a fish swimming in it; crop marks at the square's corners.
+"""Generates the AmbienceCrop icon, following the shape rules of Sailfish
+OS's own launcher icons (measured from Jolla's icons in the SDK theme):
+
+- The shape fills the whole canvas, edge to edge.
+- It's the circle-and-square system: each corner is either fully round
+  (radius = half the icon) or nearly square (radius about 4 %). This one
+  is square at the top left, round elsewhere.
+- An inset rim: the same shape again, inset by 13 % of the icon, with
+  concentric corners.
+- Vertical gradients, brighter at the top; no shadow outside the shape.
+- One bold, flat, light symbol in the middle: here a tall phone screen
+  showing a sun over the sea, between two crop brackets.
 
 Run: python3 icons/make-icon.py  (then rsvg-convert makes the PNGs)
 """
 
 S = 172
+ROUND = S / 2           # a round corner: a quarter circle
+SQUARE = S * 0.04       # a "square" corner, as Sailfish rounds it slightly
+INSET = S * 0.128       # the rim's width
+CORNERS = ("square", "round", "round", "round")  # top-left, top-right, bottom-right, bottom-left
+
+
+def shape(x, y, w, h, radii):
+    """A path for a rectangle with its own radius at each corner (tl, tr, br, bl)."""
+    tl, tr, br, bl = radii
+    return (f"M{x + tl:.2f} {y:.2f} H{x + w - tr:.2f} A{tr:.2f} {tr:.2f} 0 0 1 {x + w:.2f} {y + tr:.2f} "
+            f"V{y + h - br:.2f} A{br:.2f} {br:.2f} 0 0 1 {x + w - br:.2f} {y + h:.2f} "
+            f"H{x + bl:.2f} A{bl:.2f} {bl:.2f} 0 0 1 {x:.2f} {y + h - bl:.2f} "
+            f"V{y + tl:.2f} A{tl:.2f} {tl:.2f} 0 0 1 {x + tl:.2f} {y:.2f} Z")
+
+
+def radii(inset):
+    out = []
+    for c in CORNERS:
+        if c == "round":
+            out.append(ROUND - inset)               # concentric with the outer circle
+        else:
+            out.append(max(SQUARE - inset * 0.25, SQUARE * 0.6))
+    return out
 
 
 def build():
+    outer = shape(0, 0, S, S, radii(0))
+    inner = shape(INSET, INSET, S - 2 * INSET, S - 2 * INSET, radii(INSET))
+    # The symbol: a tall screen, centred.
+    sw, sh = 52, 94
+    sx, sy = (S - sw) / 2, (S - sh) / 2
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {S} {S}">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#5b3fb8"/>
-      <stop offset="0.55" stop-color="#e2557a"/>
-      <stop offset="1" stop-color="#ffb259"/>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9a6cf5"/>
+      <stop offset="1" stop-color="#d9478e"/>
     </linearGradient>
-    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2bc4d8"/>
-      <stop offset="1" stop-color="#14608c"/>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb37a"/>
+      <stop offset="1" stop-color="#f2667e"/>
     </linearGradient>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="7"/>
-    </filter>
-    <clipPath id="square"><rect x="18" y="18" width="136" height="136" rx="14"/></clipPath>
-    <clipPath id="screen"><rect x="58" y="18" width="56" height="136" rx="8"/></clipPath>
+    <clipPath id="screen"><rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="7"/></clipPath>
   </defs>
-  <!-- The square: the blurred surroundings -->
-  <g clip-path="url(#square)">
-    <rect x="18" y="18" width="136" height="136" fill="url(#sky)"/>
-    <g filter="url(#soft)">
-      <circle cx="86" cy="96" r="44" fill="#ffd36e"/>
-      <rect x="0" y="112" width="172" height="60" fill="url(#sea)"/>
-    </g>
-    <rect x="18" y="18" width="136" height="136" fill="#000000" fill-opacity="0.22"/>
-  </g>
-  <!-- The screen strip: sharp -->
+  <path d="{outer}" fill="url(#rim)"/>
+  <path d="{inner}" fill="url(#glow)"/>
+  <!-- The screen: a sun over the sea, flat -->
   <g clip-path="url(#screen)">
-    <rect x="58" y="18" width="56" height="136" fill="url(#sky)"/>
-    <circle cx="86" cy="96" r="30" fill="#ffd36e"/>
-    <rect x="58" y="112" width="56" height="42" fill="url(#sea)"/>
-    <!-- The fish -->
-    <path d="M70 128 C 76 118, 92 117, 100 126 L 108 120 L 108 136 L 100 130 C 92 139, 76 138, 70 128 Z"
-          fill="#ffffff"/>
-    <circle cx="78" cy="127" r="2.2" fill="#14608c"/>
+    <rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" fill="#fff4e0"/>
+    <circle cx="{S / 2}" cy="{sy + sh * 0.56}" r="15" fill="#ffc54d"/>
+    <rect x="{sx}" y="{sy + sh * 0.62}" width="{sw}" height="{sh * 0.38}" fill="#5b4bc4"/>
+    <path d="M{sx} {sy + sh * 0.75} q {sw / 4} -6 {sw / 2} 0 t {sw / 2} 0" fill="none" stroke="#fff4e0" stroke-width="3" stroke-linecap="round"/>
   </g>
-  <rect x="58" y="18" width="56" height="136" rx="8" fill="none" stroke="#ffffff" stroke-width="3.5"/>
-  <!-- Crop marks at the square's corners -->
-  <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9">
-    <path d="M10 34 L 10 10 L 34 10"/>
-    <path d="M138 10 L 162 10 L 162 34"/>
-    <path d="M10 138 L 10 162 L 34 162"/>
-    <path d="M138 162 L 162 162 L 162 138"/>
+  <rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="7" fill="none" stroke="#ffffff" stroke-width="6"/>
+  <!-- Crop brackets around it -->
+  <g fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M{sx - 16} {sy + 22} V{sy - 10} H{sx + 14}"/>
+    <path d="M{sx + sw + 16} {sy + sh - 22} V{sy + sh + 10} H{sx + sw - 14}"/>
   </g>
 </svg>
 '''

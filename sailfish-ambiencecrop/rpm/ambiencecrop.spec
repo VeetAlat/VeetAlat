@@ -1,6 +1,6 @@
 Name:       ambiencecrop
 Summary:    Frame a photo for an ambience, with a blur around it
-Version:    0.1.0
+Version:    0.1.1
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -47,6 +47,10 @@ desktop-file-install --delete-original \
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Thu Nov 12 2026 Valatalo - 0.1.1-1
+- Renamed AmbienceCrop.
+- A new icon in the shape and style of Sailfish's own launcher icons.
+
 * Thu Nov 12 2026 Valatalo - 0.1.0-1
 - First version: place a photo on the ambience's square, with guides for
   the upright and sideways screens and a blur around it; save it and

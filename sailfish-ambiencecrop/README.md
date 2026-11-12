@@ -44,6 +44,19 @@ Made by Valatalo.
 The square pictures also make good profile photos: there's a circle guide
 for that.
 
+## Icon
+
+`icons/make-icon.py` draws it to the shape rules of Sailfish's own launcher
+icons, measured from Jolla's icons in the SDK's theme:
+- **Full bleed:** the shape fills the whole canvas, edge to edge.
+- **Corners:** each one is either fully round (radius half the icon) or
+  nearly square (radius about 4 %).
+- **Inset rim:** the same shape again, 13 % in, with concentric corners.
+- **Gradients:** vertical, brighter at the top, and no shadow outside
+  the shape.
+- **Symbol:** one bold, flat, light symbol. Here it's a phone screen
+  showing a sun over the sea, between two crop brackets.
+
 ## Inside
 
 - **`src/composer.cpp`** does the image work with `QImage`:
@@ -67,7 +80,7 @@ for that.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/ambiencecrop-0.1.0-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/ambiencecrop-0.1.1-1.aarch64.rpm
 ```
 
 ## Tests

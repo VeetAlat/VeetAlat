@@ -5,7 +5,7 @@ Page {
     id: page
 
     readonly property string author: "Valatalo"
-    readonly property string version: "0.1.0"
+    readonly property string version: "0.1.1"
 
     // Tests set this to see where a tap would go instead of opening the browser.
     property var openLink: function(link) { Qt.openUrlExternally(link) }
