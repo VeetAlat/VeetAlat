@@ -1,10 +1,10 @@
 {
     "name": "StatusBar",
     "display_name": "StatusBar",
-    "description": "Masks the screen's notch with a black bar while an app is open, and shows the time and the status icons (battery, signal, Wi-Fi...) on it, like Android apps get. Phone upright only.",
+    "description": "Masks the screen's notch with a black bar while an app is open: the time and a compact battery left of the notch, the status icons (signal, Wi-Fi, Bluetooth...) right of it, like Android apps get. Phone upright only.",
     "category": "homescreen",
     "infos": {
         "maintainer": "Valatalo",
-        "version": "0.1.0"
+        "version": "0.2.0"
     }
 }

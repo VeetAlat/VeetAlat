@@ -1,12 +1,11 @@
 --- a/usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml
 +++ b/usr/share/lipstick-jolla-home-qt5/layers/AppLayer.qml
-@@ -29,4 +29,14 @@
-             contentItem.appendItem(window)
-         }
+@@ -33,2 +33,13 @@
      }
 +
-+    // StatusBar patch: a black bar over the notch with the time and status icons.
-+    // Loaded from its own file, so if it fails the app layer still works.
++    // StatusBar patch: a black bar over the notch with the time, battery and
++    // status icons. Loaded from its own file, so if it fails the app layer
++    // still works.
 +    Loader {
 +        property Item hostLayer: appLayer
 +
