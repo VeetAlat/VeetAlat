@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2fc48a"/>
+      <stop offset="1" stop-color="#0d7a63"/>
+    </linearGradient>
+    <linearGradient id="inside" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5fe0ae"/>
+      <stop offset="1" stop-color="#1fa883"/>
+    </linearGradient>
+  </defs>
+  <path d="M6.88 0.00 H86.00 A86.00 86.00 0 0 1 172.00 86.00 V165.12 A6.88 6.88 0 0 1 165.12 172.00 H86.00 A86.00 86.00 0 0 1 0.00 86.00 V6.88 A6.88 6.88 0 0 1 6.88 0.00 Z" fill="url(#rim)"/>
+  <path d="M26.14 22.02 H86.00 A63.98 63.98 0 0 1 149.98 86.00 V145.86 A4.13 4.13 0 0 1 145.86 149.98 H86.00 A63.98 63.98 0 0 1 22.02 86.00 V26.14 A4.13 4.13 0 0 1 26.14 22.02 Z" fill="url(#inside)"/>
+  <g transform="rotate(-45 86.0 86.0)">
+    <rect x="28.0" y="67.0" width="116" height="38" rx="19" fill="#ffffff"/>
+    <rect x="70.0" y="71.0" width="32" height="30" rx="5" fill="#ffe9c7"/>
+    <g>
+      <circle cx="52.0" cy="80.0" r="2.6" fill="#8fd9b8"/>
+      <circle cx="52.0" cy="92.0" r="2.6" fill="#8fd9b8"/>
+      <circle cx="62.0" cy="80.0" r="2.6" fill="#8fd9b8"/>
+      <circle cx="62.0" cy="92.0" r="2.6" fill="#8fd9b8"/>
+      <circle cx="110.0" cy="80.0" r="2.6" fill="#8fd9b8"/>
+      <circle cx="110.0" cy="92.0" r="2.6" fill="#8fd9b8"/>
+      <circle cx="120.0" cy="80.0" r="2.6" fill="#8fd9b8"/>
+      <circle cx="120.0" cy="92.0" r="2.6" fill="#8fd9b8"/>
+    </g>
+  </g>
+</svg>

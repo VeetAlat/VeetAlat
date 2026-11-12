@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=VeetPatched
+Comment=Small changes to Sailfish OS, on and off with a switch
+Icon=veetpatched
+Exec=veetpatched
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# No permissions: the app only writes requests in its own folder,
+# ~/.local/share/org.veetalat/veetpatched, for the root helper.
+OrganizationName=org.veetalat
+ApplicationName=veetpatched

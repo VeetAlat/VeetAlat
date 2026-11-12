@@ -1,0 +1,17 @@
+# VeetPatched: watches for the app's requests (one line in its data folder)
+# and starts veetpatched.service, which handles them as root.
+#
+# It starts with the user's session (user@100000.service, defaultuser), so
+# /home is mounted (it can be encrypted and mounted only after unlocking)
+# before it starts watching.
+[Unit]
+Description=VeetPatched: watch for the app's requests
+After=user@100000.service
+PartOf=user@100000.service
+
+[Path]
+PathChanged=/home/defaultuser/.local/share/org.veetalat/veetpatched/request
+Unit=veetpatched.service
+
+[Install]
+WantedBy=user@100000.service

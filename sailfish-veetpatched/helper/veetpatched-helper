@@ -1,0 +1,280 @@
+#!/bin/sh
+#
+# VeetPatched's root helper: applies and removes the patches that ship in
+# /usr/share/veetpatched/patches, and nothing else.
+#
+#   veetpatched-helper apply ID       put patch ID in
+#   veetpatched-helper unapply ID     take it out again
+#   veetpatched-helper unapply-all    take every patch out (recovery, uninstall)
+#   veetpatched-helper status         which patches are in
+#   veetpatched-helper restart-home   restart the home screen
+#   veetpatched-helper serve          handle the app's request (run by systemd)
+#
+# The app can't run anything as root. It writes one line, like
+# "apply statusbar 1731400000", to request in its data folder; systemd's
+# veetpatched.path notices and runs "serve" as root, which checks the line,
+# does it, and writes the answer back (status and log) as the user.
+# A request is always "ACTION ID TAG": apply/unapply with a patch's id,
+# or status/restart-home with "-"; TAG is a number the answer repeats.
+#
+# A patch is a folder with patch.conf (TARGET, EXPECT, BLOCK, RESTART) and
+# BLOCK, the lines to put in. They go in just before TARGET's last closing
+# brace, between "VEETPATCHED:ID:begin" and ":end" comments, so taking a
+# patch out removes exactly those lines; the original is kept in
+# /var/lib/veetpatched/backup and comes back byte for byte.
+#
+# For the tests, VP_ROOT, VP_PATCHES, VP_STATE, VP_OUT and VP_USER point it
+# at copies instead of the system.
+
+set -u
+umask 022
+
+ROOT=${VP_ROOT:-}
+PATCHES=${VP_PATCHES:-/usr/share/veetpatched/patches}
+STATE=${VP_STATE:-/var/lib/veetpatched}
+USER_NAME=${VP_USER:-defaultuser}
+OUT=${VP_OUT:-/home/$USER_NAME/.local/share/org.veetalat/veetpatched}
+LOG=$STATE/log
+
+log() {
+    mkdir -p "$STATE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"
+}
+
+# A patch id: lower-case letters, digits and dashes, and a folder of ours.
+valid_id() {
+    case "$1" in
+        ""|*[!a-z0-9-]*) return 1 ;;
+    esac
+    [ -f "$PATCHES/$1/patch.conf" ]
+}
+
+# Reads a patch's settings (root-owned, from /usr/share) into NAME, TARGET,
+# EXPECT, BLOCK, RESTART, and T, the file as seen from here.
+load() {
+    NAME=; TARGET=; EXPECT=; BLOCK=; RESTART=
+    . "$PATCHES/$1/patch.conf"
+    T="$ROOT$TARGET"
+}
+
+is_applied() {
+    grep -q "VEETPATCHED:$1:begin" "$T" 2>/dev/null
+}
+
+# The file without patch $1's lines.
+without() {
+    awk -v id="$1" '
+        index($0, "VEETPATCHED:" id ":begin") { skip = 1; next }
+        index($0, "VEETPATCHED:" id ":end") { skip = 0; next }
+        !skip { print }' "$2"
+}
+
+# Prints "applied", or "failed <why>".
+apply() {
+    id=$1
+    load "$id"
+    if [ ! -f "$T" ]; then
+        log "$id: not applied, $TARGET is missing"
+        echo "failed The file it changes is missing: $TARGET"
+        return 1
+    fi
+    if ! grep -q "$EXPECT" "$T"; then
+        log "$id: not applied, $TARGET isn't the file it expects"
+        echo "failed $TARGET isn't the file this patch expects"
+        return 1
+    fi
+    if is_applied "$id"; then
+        echo "applied"
+        return 0
+    fi
+    mkdir -p "$STATE/backup/$id"
+    cp -p "$T" "$STATE/backup/$id/original"
+    tmp="$STATE/backup/$id/patched"
+    # The block goes before the last line that's just "}".
+    if ! awk -v id="$id" -v blockfile="$PATCHES/$id/$BLOCK" '
+            { lines[NR] = $0 }
+            END {
+                last = 0
+                for (i = NR; i >= 1; i--) {
+                    l = lines[i]
+                    sub(/\r$/, "", l)
+                    if (l ~ /^[ \t]*}[ \t]*$/) { last = i; break }
+                }
+                if (last == 0) exit 3
+                for (i = 1; i < last; i++) print lines[i]
+                print "    // VEETPATCHED:" id ":begin"
+                while ((getline b < blockfile) > 0) print b
+                print "    // VEETPATCHED:" id ":end"
+                for (i = last; i <= NR; i++) print lines[i]
+            }' "$T" > "$tmp"; then
+        log "$id: not applied, no closing brace found in $TARGET"
+        echo "failed $TARGET doesn't end the way this patch expects"
+        return 1
+    fi
+    # Check before writing: taking the block out again must give the
+    # original (line for line, as awk writes it).
+    awk '{ print }' "$STATE/backup/$id/original" > "$STATE/backup/$id/original.lines"
+    if ! without "$id" "$tmp" | cmp -s - "$STATE/backup/$id/original.lines"; then
+        log "$id: not applied, the check failed"
+        echo "failed The change didn't check out, so nothing was changed"
+        return 1
+    fi
+    # Written in place, so the file keeps its owner and permissions.
+    cat "$tmp" > "$T"
+    if is_applied "$id"; then
+        log "$id: applied to $TARGET"
+        echo "applied"
+    else
+        cat "$STATE/backup/$id/original" > "$T"
+        log "$id: writing $TARGET failed, original put back"
+        echo "failed $TARGET couldn't be written"
+        return 1
+    fi
+}
+
+# Prints "not-applied", or "failed <why>".
+unapply() {
+    id=$1
+    load "$id"
+    if [ ! -f "$T" ] || ! is_applied "$id"; then
+        echo "not-applied"
+        return 0
+    fi
+    tmp="$STATE/backup/$id/unpatched"
+    mkdir -p "$STATE/backup/$id"
+    without "$id" "$T" > "$tmp"
+    backup="$STATE/backup/$id/original"
+    if [ -f "$backup" ] && awk '{ print }' "$backup" | cmp -s - "$tmp"; then
+        # The original, byte for byte.
+        cat "$backup" > "$T"
+    else
+        # The file changed since (an update?): just without our lines.
+        cat "$tmp" > "$T"
+    fi
+    if is_applied "$id"; then
+        log "$id: removing it from $TARGET failed"
+        echo "failed $TARGET couldn't be written"
+        return 1
+    fi
+    log "$id: removed from $TARGET"
+    echo "not-applied"
+}
+
+status_lines() {
+    for dir in "$PATCHES"/*/; do
+        id=$(basename "$dir")
+        valid_id "$id" || continue
+        load "$id"
+        if [ ! -f "$T" ]; then
+            echo "patch $id missing"
+        elif is_applied "$id"; then
+            echo "patch $id applied"
+        else
+            echo "patch $id not-applied"
+        fi
+    done
+}
+
+restart_home() {
+    uid=$(id -u "$USER_NAME" 2>/dev/null) || { echo "failed No user $USER_NAME"; return 1; }
+    if systemctl --user -M "$USER_NAME@" restart lipstick 2>/dev/null; then
+        log "home screen restarted"
+        echo "restarted"
+        return 0
+    fi
+    if as_user env XDG_RUNTIME_DIR="/run/user/$uid" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/dbus/user_bus_socket" \
+            systemctl --user restart lipstick; then
+        log "home screen restarted"
+        echo "restarted"
+        return 0
+    fi
+    log "restarting the home screen failed"
+    echo "failed The home screen couldn't be restarted: restart the phone"
+    return 1
+}
+
+# Runs a command as the user (as root), or just runs it (in the tests).
+as_user() {
+    if [ "$(id -u)" != 0 ]; then
+        "$@"
+    elif command -v runuser > /dev/null 2>&1; then
+        runuser -u "$USER_NAME" -- "$@"
+    else
+        su -s /bin/sh "$USER_NAME" -c '"$@"' -- sh "$@"
+    fi
+}
+
+# Writes the answer into the app's folder, as the user, so root never
+# writes into a folder the user controls.
+answer() {
+    reply="$STATE/answer"
+    {
+        echo "request $1"
+        echo "result $2"
+        status_lines
+    } > "$reply"
+    tail -n 60 "$LOG" > "$STATE/answer-log" 2>/dev/null || : > "$STATE/answer-log"
+    as_user sh -c 'cat > "$1/status.tmp" && mv "$1/status.tmp" "$1/status"' sh "$OUT" < "$reply"
+    as_user sh -c 'cat > "$1/log.tmp" && mv "$1/log.tmp" "$1/log"' sh "$OUT" < "$STATE/answer-log"
+}
+
+serve() {
+    req="$OUT/request"
+    [ -e "$req" ] || exit 0
+    if [ -L "$req" ] || [ ! -f "$req" ]; then
+        log "refused a request that isn't a plain file"
+        rm -f "$req"
+        exit 1
+    fi
+    line=$(head -c 200 "$req" | head -n 1)
+    rm -f "$req"
+    # shellcheck disable=SC2086
+    set -- $line
+    action=${1:-}
+    id=${2:-}
+    tag=${3:-0}
+    case "$tag" in ""|*[!0-9]*) tag=0 ;; esac
+    case "$action" in
+        apply|unapply)
+            if valid_id "$id"; then
+                result="$id $($action "$id")"
+            else
+                log "refused: no patch called that"
+                result="- failed No such patch"
+            fi
+            ;;
+        status)
+            result="- ok"
+            ;;
+        restart-home)
+            result="- $(restart_home)"
+            ;;
+        *)
+            log "refused an unknown request"
+            result="- failed Unknown request"
+            ;;
+    esac
+    answer "$tag" "$result"
+}
+
+case "${1:-}" in
+    apply|unapply)
+        valid_id "${2:-}" || { echo "No patch called '${2:-}'" >&2; exit 2; }
+        out=$("$1" "$2"); echo "$out"
+        case "$out" in failed*) exit 1 ;; esac
+        ;;
+    unapply-all)
+        for dir in "$PATCHES"/*/; do
+            id=$(basename "$dir")
+            valid_id "$id" && echo "$id: $(unapply "$id")"
+        done
+        ;;
+    status) status_lines ;;
+    restart-home) restart_home ;;
+    serve) serve ;;
+    *)
+        echo "usage: $0 apply ID | unapply ID | unapply-all | status | restart-home | serve" >&2
+        exit 2
+        ;;
+esac

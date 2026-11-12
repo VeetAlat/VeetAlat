@@ -1,0 +1,9 @@
+# VeetPatched: handles one request from the app, as root, then stops. The
+# helper only applies or removes the patches shipped in
+# /usr/share/veetpatched/patches.
+[Unit]
+Description=VeetPatched: apply or remove a patch the app asked for
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/veetpatched/veetpatched-helper serve

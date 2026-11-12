@@ -1,0 +1,9 @@
+# qmake / mb2 build output
+Makefile
+*.o
+moc_*.cpp
+/veetpatched
+documentation.list
+.qmake.stash
+RPMS/
+.mb2
