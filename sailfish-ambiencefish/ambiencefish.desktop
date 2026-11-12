@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=AmbienceFish
+Comment=Frame a photo for an ambience, with a blur around it
+Icon=ambiencefish
+Exec=ambiencefish
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+# Pictures and Downloads: reading the photo and saving the result in
+# Pictures/AmbienceFish. MediaIndexing: the gallery picker lists photos.
+# Ambience: asking the ambience service to make the ambience.
+Permissions=Pictures;Downloads;MediaIndexing;Ambience
+OrganizationName=org.veetalat
+ApplicationName=ambiencefish

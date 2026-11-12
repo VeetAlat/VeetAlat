@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""Generates the AmbienceFish icon: an ambience's square, its outside a soft
+blur of sunset colours, and in the middle the sharp, tall screen strip
+with a fish swimming in it; crop marks at the square's corners.
+
+Run: python3 icons/make-icon.py  (then rsvg-convert makes the PNGs)
+"""
+
+S = 172
+
+
+def build():
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {S} {S}">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b3fb8"/>
+      <stop offset="0.55" stop-color="#e2557a"/>
+      <stop offset="1" stop-color="#ffb259"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2bc4d8"/>
+      <stop offset="1" stop-color="#14608c"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+    <clipPath id="square"><rect x="18" y="18" width="136" height="136" rx="14"/></clipPath>
+    <clipPath id="screen"><rect x="58" y="18" width="56" height="136" rx="8"/></clipPath>
+  </defs>
+  <!-- The square: the blurred surroundings -->
+  <g clip-path="url(#square)">
+    <rect x="18" y="18" width="136" height="136" fill="url(#sky)"/>
+    <g filter="url(#soft)">
+      <circle cx="86" cy="96" r="44" fill="#ffd36e"/>
+      <rect x="0" y="112" width="172" height="60" fill="url(#sea)"/>
+    </g>
+    <rect x="18" y="18" width="136" height="136" fill="#000000" fill-opacity="0.22"/>
+  </g>
+  <!-- The screen strip: sharp -->
+  <g clip-path="url(#screen)">
+    <rect x="58" y="18" width="56" height="136" fill="url(#sky)"/>
+    <circle cx="86" cy="96" r="30" fill="#ffd36e"/>
+    <rect x="58" y="112" width="56" height="42" fill="url(#sea)"/>
+    <!-- The fish -->
+    <path d="M70 128 C 76 118, 92 117, 100 126 L 108 120 L 108 136 L 100 130 C 92 139, 76 138, 70 128 Z"
+          fill="#ffffff"/>
+    <circle cx="78" cy="127" r="2.2" fill="#14608c"/>
+  </g>
+  <rect x="58" y="18" width="56" height="136" rx="8" fill="none" stroke="#ffffff" stroke-width="3.5"/>
+  <!-- Crop marks at the square's corners -->
+  <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9">
+    <path d="M10 34 L 10 10 L 34 10"/>
+    <path d="M138 10 L 162 10 L 162 34"/>
+    <path d="M10 138 L 10 162 L 34 162"/>
+    <path d="M138 162 L 162 162 L 162 138"/>
+  </g>
+</svg>
+'''
+
+
+open("icons/ambiencefish.svg", "w").write(build())
+print("wrote icons/ambiencefish.svg")
