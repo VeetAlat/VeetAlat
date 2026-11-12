@@ -34,6 +34,7 @@ Item {
             Rectangle {
                 id: battery
                 objectName: "battery"
+                property bool usbPreparingMode   // as the real BatteryStatusIndicator has
                 width: Theme.iconSizeExtraSmall / 2 + Theme.paddingSmall + statusArea.fake.battery
                 height: Theme.iconSizeExtraSmall
                 color: "#44aa44"

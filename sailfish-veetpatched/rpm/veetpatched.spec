@@ -1,6 +1,6 @@
 Name:       veetpatched
 Summary:    Small changes to Sailfish OS, on and off with a switch
-Version:    0.2.1
+Version:    0.2.2
 Release:    1
 License:    MIT
 URL:        https://github.com/VeetAlat/VeetAlat
@@ -69,6 +69,13 @@ systemctl daemon-reload || :
 /usr/lib/systemd/system/veetpatched.service
 
 %changelog
+* Thu Nov 12 2026 Valatalo - 0.2.2-1
+- StatusBar: a compact battery, with the charge percentage inside a small
+  battery instead of an icon with the percentage beside it, so the clock
+  has room. Its fill shows the charge: green while charging, red when
+  low, amber in power save. It replaces the home screen's battery in the
+  bar only; if it can't load, the home screen's battery stays.
+
 * Thu Nov 12 2026 Valatalo - 0.2.1-1
 - StatusBar: the clock and the battery no longer overlap. The clock goes
   at the left edge with the home screen's left icons (battery, profile,

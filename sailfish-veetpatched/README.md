@@ -16,8 +16,16 @@ Made by Valatalo.
 
 ## How StatusBar fits around the notch
 
-Left of the notch: the clock at the left edge, like Android, then the
-home screen's own left icons (battery, profile, do not disturb, alarm).
+Left of the notch: the clock at the left edge, like Android, then a
+compact battery, then the home screen's other left icons (profile, do
+not disturb, alarm).
+
+**The compact battery** shows the charge percentage inside a small
+battery, instead of the home screen's icon with the percentage beside
+it: well under half the width. The fill shows the charge, green while
+charging, red when low and amber in power save. It replaces the home
+screen's battery in the bar only, and if it can't load on some Sailfish
+version, the home screen's own battery stays.
 Right of it: the right icons (location, VPN, Bluetooth, Wi-Fi, mobile
 signal) at the right edge. If one side doesn't fit next to the notch, it
 shrinks just enough to fit, to 60% at most. Three seconds after the
@@ -102,7 +110,7 @@ then restart the phone. Uninstalling VeetPatched does the same first.
 
 ```sh
 ./build-rpm.sh aarch64      # Docker; RPM lands in RPMS/
-devel-su pkcon install-local ~/Downloads/veetpatched-0.2.1-1.aarch64.rpm
+devel-su pkcon install-local ~/Downloads/veetpatched-0.2.2-1.aarch64.rpm
 ```
 
 ## Tests
@@ -110,7 +118,7 @@ devel-su pkcon install-local ~/Downloads/veetpatched-0.2.1-1.aarch64.rpm
 ```sh
 sh tests/test_helper.sh       # the helper: 72 checks
 tests/sdk-smoke-test.sh       # the app and the real helper together, in the SDK: 29 checks
-tests/bar-layout-test.sh      # StatusBar's layout over five notch shapes, in the SDK
+tests/bar-layout-test.sh      # StatusBar's layout and compact battery, in the SDK
 ```
 
 **The helper's tests:**
@@ -139,9 +147,11 @@ modules, with a stand-in for the home screen's private plugin.
 **The layout test** lays out the real bar file in the SDK over five notch
 shapes, from a small punch hole to a very wide notch, with a stand-in
 for the home screen's status area built like the real one. It checks
-that the clock, the left icons and the right icons never overlap each
-other or the notch, that a side only shrinks when it has to, and that
-everything stays vertically centred.
+that the clock, the battery, the left icons and the right icons never
+overlap each other or the notch, that a side only shrinks when it has
+to, and that everything stays vertically centred. It also checks the
+compact battery takes the original's place, its number and colours, and
+that a compact battery that can't load leaves the original in place.
 
 **Not testable here:** systemd running the helper on the phone (the units
 pass `systemd-analyze verify`), and the bar on the real screen.

@@ -28,7 +28,7 @@ QString confValue(const QString &conf, const QString &key)
     return m.hasMatch() ? m.captured(1) : QString();
 }
 
-const char *const VERSION = "0.2.1";
+const char *const VERSION = "0.2.2";
 const qint64 APP_LOG_MAX = 131072;
 
 // "2026-11-12 17:25:20 INFO  text" lines into entries.

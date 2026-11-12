@@ -17,6 +17,11 @@ cp -r "$HERE/tests/bar/." "$WORK/"
 sed 's|import "file:///usr/share/lipstick-jolla-home-qt5/statusarea"|import "fake"|' \
     "$HERE/patches/statusbar/NotchStatusBar.qml" > "$WORK/NotchStatusBar.qml"
 grep -q 'import "fake"' "$WORK/NotchStatusBar.qml"
+cp "$HERE/patches/statusbar/CompactBattery.qml" "$WORK/"
+# A copy whose compact battery can't load, to check the original stays.
+mkdir "$WORK/broken"
+sed 's|import "fake"|import "../fake"|' "$WORK/NotchStatusBar.qml" > "$WORK/broken/NotchStatusBar.qml"
+echo 'this is not QML' > "$WORK/broken/CompactBattery.qml"
 chmod -R a+rwX "$WORK"
 
 docker run --rm -v "$WORK:/home/mersdk/bar" -w /home/mersdk/bar \
@@ -25,4 +30,8 @@ docker run --rm -v "$WORK:/home/mersdk/bar" -w /home/mersdk/bar \
             sb2 -t $TARGET sh -c 'g++ -o runner runner.cpp /usr/lib/libQt5QuickTest.so.5 && ./runner -input tst_barlayout.qml' 2>&1 |
             grep -v -E 'dconf|pixel ratio|DPI'
     " | tee "$WORK/out.log"
-grep -q "Totals: .* 0 failed" "$WORK/out.log" && ! grep -q -E "QWARN|qml: .*(Error|rror:)|TypeError|ReferenceError" "$WORK/out.log"
+# Expected here: no system D-Bus for the battery's sources, and the broken
+# copy's own error. Any other warning fails the test.
+grep -q "Totals: .* 0 failed" "$WORK/out.log" &&
+    ! grep -E "QWARN|qml: .*(Error|rror:)|TypeError|ReferenceError" "$WORK/out.log" |
+        grep -v -E "org\.nemomobile\.dbus: |broken/CompactBattery\.qml:1:1: Expected a qualified name id" | grep -q .

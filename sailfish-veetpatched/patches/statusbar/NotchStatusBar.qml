@@ -36,6 +36,9 @@ Item {
     // builds it differently; then the clock just goes left of the notch.
     property Item leftRow: null
     property Item rightRow: null
+    // Its battery, hidden here: ours shows the percentage inside a smaller one.
+    property Item originalBattery: null
+    readonly property bool compactBattery: originalBattery !== null && battery.status === Loader.Ready
 
     // Room on each side of the notch, and how much of it is needed. When a
     // side doesn't fit, it's shrunk to fit, but no smaller than minScale.
@@ -43,10 +46,21 @@ Item {
     readonly property real edge: status.cornerPadding
     readonly property real gap: Theme.paddingMedium
     readonly property real leftRoom: notchX - gap - edge
-    readonly property real leftNeeded: clock.width + (leftRow ? gap + leftRow.width : 0)
+    // Added up here: a Row only updates its own width on the next frame.
+    readonly property real leftRowWidth: leftRow ? rowWidth(leftRow) : 0
+    readonly property real leftNeeded: leftGroup.width + (leftRowWidth > 0 ? Theme.paddingSmall + leftRowWidth : 0)
     readonly property real leftScale: leftRow ? fit(leftRoom, leftNeeded) : 1
     readonly property real rightRoom: width - edge - (notchX + notchWidth + gap)
-    readonly property real rightScale: rightRow ? fit(rightRoom, rightRow.width) : 1
+    readonly property real rightScale: rightRow ? fit(rightRoom, rowWidth(rightRow)) : 1
+
+    function rowWidth(row) {
+        var w = 0, n = 0
+        for (var i = 0; i < row.children.length; i++) {
+            var c = row.children[i]
+            if (c.visible && c.width > 0) { w += c.width; n++ }
+        }
+        return w + Math.max(0, n - 1) * row.spacing
+    }
 
     function fit(room, needed) {
         return needed <= 0 || needed <= room ? 1 : Math.max(minScale, room / needed)
@@ -74,6 +88,9 @@ Item {
             rows.sort(function(a, b) { return a.x - b.x })
             leftRow = rows[0]
             rightRow = rows[rows.length - 1]
+            var icons = leftRow.children
+            for (var i = 0; i < icons.length; i++)
+                if (icons[i].hasOwnProperty("usbPreparingMode")) originalBattery = icons[i]
         }
         report.start()
     }
@@ -85,9 +102,10 @@ Item {
         interval: 3000
         onTriggered: console.log("VeetPatched StatusBar: screen " + bar.width + ", notch " + bar.notchX + "+" + bar.notchWidth
                                  + "x" + bar.notchHeight + ", icon rows " + (bar.leftRow ? "found" : "not found")
+                                 + ", battery " + (bar.compactBattery ? "compact" : "the home screen's")
                                  + "; left: room " + Math.round(bar.leftRoom) + ", needs " + Math.round(bar.leftNeeded)
                                  + ", scale " + bar.leftScale.toFixed(2)
-                                 + "; right: room " + Math.round(bar.rightRoom) + ", needs " + (bar.rightRow ? Math.round(bar.rightRow.width) : 0)
+                                 + "; right: room " + Math.round(bar.rightRoom) + ", needs " + (bar.rightRow ? Math.round(bar.rowWidth(bar.rightRow)) : 0)
                                  + ", scale " + bar.rightScale.toFixed(2))
     }
 
@@ -108,12 +126,19 @@ Item {
         updatesEnabled: bar.visible
     }
 
-    // The clock first, at the left edge like Android, then the left icons.
+    // The clock and our battery first, at the left edge like Android, then
+    // the rest of the left icons.
     Binding {
         target: bar.leftRow
         when: bar.leftRow !== null
         property: "x"
-        value: Math.round(bar.edge + (clock.width + bar.gap) * bar.leftScale)
+        value: Math.round(bar.edge + (leftGroup.width + Theme.paddingSmall) * bar.leftScale)
+    }
+    Binding {
+        target: bar.originalBattery
+        when: bar.compactBattery
+        property: "visible"
+        value: false
     }
     Binding {
         target: bar.leftRow
@@ -141,23 +166,45 @@ Item {
         value: bar.rightScale
     }
 
-    ClockItem {
-        id: clock
+    // Placed by bindings rather than a Row, so it's right at once, without
+    // waiting for a frame to be drawn.
+    Item {
+        id: leftGroup
 
         x: bar.leftRow ? bar.edge
-                       : bar.notchX > clock.width + 2 * Theme.paddingLarge
-                         ? bar.notchX - clock.width - Theme.paddingLarge
+                       : bar.notchX > leftGroup.width + 2 * Theme.paddingLarge
+                         ? bar.notchX - leftGroup.width - Theme.paddingLarge
                          : Theme.paddingLarge
         anchors.verticalCenter: parent.verticalCenter
+        width: clock.width + (battery.visible ? bar.gap + battery.width : 0)
+        height: Math.max(clock.height, battery.height)
         transformOrigin: Item.Left
         scale: bar.leftScale
-        updatesEnabled: bar.visible
-        color: "white"
-        font { pixelSize: Theme.fontSizeSmall; family: Theme.fontFamilyHeading }
 
-        Connections {
-            target: Lipstick.compositor
-            onDisplayAboutToBeOn: clock.forceUpdate()
+        ClockItem {
+            id: clock
+
+            objectName: "clock"
+            anchors.verticalCenter: parent.verticalCenter
+            updatesEnabled: bar.visible
+            color: "white"
+            font { pixelSize: Theme.fontSizeSmall; family: Theme.fontFamilyHeading }
+
+            Connections {
+                target: Lipstick.compositor
+                onDisplayAboutToBeOn: clock.forceUpdate()
+            }
+        }
+
+        Loader {
+            id: battery
+
+            objectName: "compactBattery"
+            x: clock.width + bar.gap
+            anchors.verticalCenter: parent.verticalCenter
+            active: bar.originalBattery !== null
+            visible: battery.status === Loader.Ready   // "status" alone would be the StatusArea's id
+            source: "CompactBattery.qml"
         }
     }
 }
